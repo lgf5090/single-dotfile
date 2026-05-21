@@ -1,0 +1,73 @@
+# =============================================================================
+# ~/.aliases  -  Shared aliases for bash / zsh / fish / nushell / PowerShell,
+#                read by the single-file `config.{ext}` loaders.
+#
+# Copy this file to ~/.aliases and edit it to your taste:
+#
+#     cp aliases.example ~/.aliases
+#
+# Missing file is silently ignored.
+#
+# -----------------------------------------------------------------------------
+# FORMAT
+# -----------------------------------------------------------------------------
+#
+#   name=command           # alias `name` runs `command`
+#   name='cmd --flag x'    # single quotes are stripped
+#   name="cmd --flag x"    # double quotes are stripped
+#   # comment              # full-line comments start with `#`
+#   <blank line>           ignored
+#
+# Rules:
+#   * One alias per line. No trailing `;`, no continuations.
+#   * `name` must match [A-Za-z_][A-Za-z0-9_-]*.
+#   * The FIRST `=` separates name and command. Subsequent `=` stay in command.
+#   * Inline `#` after a value is NOT a comment.
+#
+# -----------------------------------------------------------------------------
+# HARD RULES — what may live here
+# -----------------------------------------------------------------------------
+#
+# An alias belongs here only if ALL of these hold:
+#
+#   1. SINGLE EXTERNAL COMMAND + literal args. The body must start with a
+#      real executable (git, docker, npm, …). No pipelines `|`, no
+#      `&&`/`||`, no `$()`/backticks, no redirects, no `$VAR` expansion,
+#      no shell builtins.
+#
+#   2. Neither the alias NAME nor the FIRST WORD of the body collides with
+#      a built-in/auto-alias in nushell or PowerShell. This is the hard
+#      constraint that makes the file 5-shell-safe.
+#
+#      nushell built-in names to avoid:
+#         cd clear cp date du exit find history kill ls mkdir mv open
+#         port ps rm sleep which
+#      PowerShell auto-alias names to avoid (a sample of the common ones):
+#         cd cls copy del dir echo erase gc gcm gci gi gl gm gp gps gv h
+#         history md mi move ni r ren ri rm select set sl sv type where
+#
+#   3. Flags work on every target OS (Linux, macOS, BSD, Windows). `df -h`
+#      is OK; `ps -ef` is not (BSD differs).
+#
+# Anything that fails a rule should be written directly in your shell rc
+# (where you can use that shell's native syntax).
+#
+# -----------------------------------------------------------------------------
+# NUSHELL CAVEAT
+# -----------------------------------------------------------------------------
+#
+# nushell parses `alias` at parse time, so it cannot read this text file
+# and install aliases at startup. The nushell loader (config.nu) handles
+# this by translating ~/.aliases into a cached file the FIRST time you
+# source it. After editing ~/.aliases, run `shells-regen-aliases` from
+# inside nushell to refresh the cache, then re-source config.nu.
+#
+# =============================================================================
+
+# ---- Example entries; uncomment and edit as needed --------------------------
+
+# df=df -h
+# now=date +%Y-%m-%dT%H:%M:%S%z
+# g=git
+# gst=git status
+# gpsu=git push -u origin HEAD

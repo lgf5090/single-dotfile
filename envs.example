@@ -1,0 +1,64 @@
+# =============================================================================
+# ~/.envs  -  Shared environment variables for bash / zsh / fish / nushell /
+#             PowerShell, read by the single-file `config.{ext}` loaders.
+#
+# Copy this file to ~/.envs and edit it to your taste:
+#
+#     cp envs.example ~/.envs
+#
+# The file is read at startup by whichever single-file config you source.
+# Missing file is silently ignored.
+#
+# -----------------------------------------------------------------------------
+# FORMAT
+# -----------------------------------------------------------------------------
+#
+#   KEY=VALUE              # export KEY with the given value
+#   KEY="value with space" # double quotes are stripped; content used verbatim
+#   KEY='value with space' # single quotes are stripped; content used verbatim
+#   # comment              # full-line comments start with `#`
+#   <blank line>           ignored
+#
+# Rules:
+#   * One assignment per line. No trailing `;`, no line continuations.
+#   * KEY must match [A-Za-z_][A-Za-z0-9_]*  (POSIX env-var name).
+#   * Surrounding whitespace around KEY/VALUE is trimmed.
+#   * Quotes (if present) must wrap the WHOLE value.
+#   * Inline `#` after a value is NOT a comment — it becomes part of the
+#     value. Put comments on their own line.
+#   * No shell expansion: `$HOME`, `$(cmd)`, backticks, `~` are all literal.
+#     Use the placeholders below instead.
+#
+# -----------------------------------------------------------------------------
+# PLACEHOLDERS
+# -----------------------------------------------------------------------------
+#
+#   {HOME}   -> the current user's home directory
+#   {PATH}   -> the existing PATH (useful when prepending/appending)
+#
+# Examples:
+#   CARGO_HOME={HOME}/.cargo
+#   PATH={HOME}/.local/bin:{PATH}
+#
+# -----------------------------------------------------------------------------
+# PATH HANDLING
+# -----------------------------------------------------------------------------
+#
+# The variable named `PATH` is treated specially: split on `:`, each entry
+# is prepended to the shell's existing PATH if not already present
+# (deduplicated, leftmost wins). Always use `:` as the separator here,
+# regardless of OS — the loaders translate to the platform separator.
+#
+# Variables that need other env vars expanded (e.g. PATH={JAVA_HOME}/bin)
+# don't belong here — only {HOME}/{PATH} are recognised. Put such cases in
+# your shell's rc file instead, where you can use native expansion.
+#
+# =============================================================================
+
+# ---- Example entries; uncomment and edit as needed --------------------------
+
+# HF_ENDPOINT=https://hf-mirror.com
+# EDITOR=vim
+# PAGER=less
+# LESS=-R --use-color
+# PATH={HOME}/.local/bin:{HOME}/.cargo/bin:{PATH}
