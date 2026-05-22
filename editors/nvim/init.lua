@@ -323,14 +323,12 @@ end)
 safe("bufferline", function(m)
   m.setup({
     options = {
-      mode                  = "buffers",
-      diagnostics           = "nvim_lsp",
-      separator_style       = "thin",
-      show_buffer_icons     = false,
+      diagnostics             = "nvim_lsp",
+      separator_style         = "thin",
+      show_buffer_icons       = false,
       show_buffer_close_icons = false,
-      show_close_icon       = false,
-      show_tab_indicators   = false,
-      diagnostics_indicator = function(count, level)
+      show_close_icon         = false,
+      diagnostics_indicator   = function(count, level)
         local sev = vim.diagnostic.severity
         local icon = level == sev.ERROR and "E" or level == sev.WARN and "W" or "I"
         return " " .. icon .. count
