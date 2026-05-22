@@ -27,6 +27,10 @@ vim.pack.add({
   -- Fuzzy finder
   { src = "https://github.com/nvim-lua/plenary.nvim" },
   { src = "https://github.com/nvim-telescope/telescope.nvim" },
+  -- C sorter for telescope (10-50x faster than the Lua fallback on large
+  -- repos). vim.pack 0.12 has no build hook — we run `make` on first launch
+  -- via the build block below.
+  { src = "https://github.com/nvim-telescope/telescope-fzf-native.nvim" },
 
   -- Status line / buffer tabs
   { src = "https://github.com/nvim-lualine/lualine.nvim" },
@@ -52,6 +56,18 @@ vim.pack.add({
 local function safe(mod, fn)
   local ok, m = pcall(require, mod)
   if ok then fn(m) end
+end
+
+-- One-time build of telescope-fzf-native's C extension. vim.pack 0.12 has no
+-- post-install hook, so we check at startup whether libfzf.so exists and run
+-- `make` if not. After a successful build the stat check is a no-op (~µs).
+do
+  local ok, info = pcall(vim.pack.get, { names = { "telescope-fzf-native.nvim" } })
+  if ok and info and info[1] and info[1].path
+      and not vim.uv.fs_stat(vim.fs.joinpath(info[1].path, "build", "libfzf.so")) then
+    vim.notify("Building telescope-fzf-native (one-time, ~5s)...", vim.log.levels.INFO)
+    vim.system({ "make" }, { cwd = info[1].path }):wait()
+  end
 end
 
 -- ─── 2. Options ───────────────────────────────────────────────────────────────
@@ -404,6 +420,15 @@ end)
 
 -- ─── 15. Diagnostics List (Trouble) ───────────────────────────────────────────
 safe("trouble", function(m) m.setup() end)
+
+-- ─── 15a. Telescope (load fzf-native sorter if it built successfully) ─────────
+-- telescope works with defaults so no explicit setup() was needed before, but
+-- loading the fzf extension requires either an explicit setup or a separate
+-- load_extension call. pcall handles the case where libfzf.so failed to build.
+safe("telescope", function(t)
+  t.setup({})
+  pcall(t.load_extension, "fzf")
+end)
 
 -- ─── 16. Autocommands ─────────────────────────────────────────────────────────
 local augroup = vim.api.nvim_create_augroup
