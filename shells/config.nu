@@ -244,11 +244,14 @@ if ($env.JAVA_HOME? | is-empty) {
 }
 
 # ---- Linux/WSL system libs (used by rustc / CUDA builds) --------------------
-if (($env.SHELLS_OS in ["linux" "wsl"]) and ("/usr/lib/x86_64-linux-gnu" | path exists)) {
-    let p = "/usr/lib/x86_64-linux-gnu"
-    $env.LIBRARY_PATH    = (if ($env.LIBRARY_PATH?    | is-not-empty) { $"($p):($env.LIBRARY_PATH)" }    else { $p })
-    $env.LD_LIBRARY_PATH = (if ($env.LD_LIBRARY_PATH? | is-not-empty) { $"($p):($env.LD_LIBRARY_PATH)" } else { $p })
-    $env.RUSTFLAGS       = $"-L ($p)"
+if ($env.SHELLS_OS in ["linux" "wsl"]) {
+    for p in ["/usr/lib/x86_64-linux-gnu" "/usr/lib/aarch64-linux-gnu"] {
+        if not ($p | path exists) { continue }
+        $env.LIBRARY_PATH    = (if ($env.LIBRARY_PATH?    | is-not-empty) { $"($p):($env.LIBRARY_PATH)" }    else { $p })
+        $env.LD_LIBRARY_PATH = (if ($env.LD_LIBRARY_PATH? | is-not-empty) { $"($p):($env.LD_LIBRARY_PATH)" } else { $p })
+        $env.RUSTFLAGS       = $"-L ($p)"
+        break
+    }
 }
 
 # ---- Docker -----------------------------------------------------------------
