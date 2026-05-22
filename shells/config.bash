@@ -12,9 +12,6 @@
 # Self-contained: does NOT source any other file in this repo.
 # =============================================================================
 
-# Shell options
-shopt -s histappend
-
 # Only in interactive shell
 if [[ $- == *i* ]]; then
     # 启用 Vi 模式
