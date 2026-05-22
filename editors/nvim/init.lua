@@ -167,7 +167,9 @@ map("n", "<leader>xd", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", "Buff
 safe("tokyonight", function(m)
   m.setup({ style = "night", transparent = false })
 end)
-vim.cmd.colorscheme("tokyonight")
+-- pcall: on first launch the plugin isn't downloaded yet — fall back to the
+-- built-in default rather than aborting init.lua with E185.
+pcall(vim.cmd.colorscheme, "tokyonight")
 
 -- ─── 5. Treesitter ────────────────────────────────────────────────────────────
 safe("nvim-treesitter.configs", function(ts)
