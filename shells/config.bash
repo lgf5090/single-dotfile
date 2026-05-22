@@ -515,8 +515,25 @@ proxy() {
     echo "proxy on  ($host:$port)"
 }
 
-alias socks5='_p="socks5://$PROXY_HOST:$PROXY_PORT"; export all_proxy=$_p ALL_PROXY=$_p; unset _p; echo "socks5 on ($PROXY_HOST:$PROXY_PORT)"'
-alias unproxy='unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY; echo "proxy off"'
+# Usage: same as proxy, but sets socks5 (all_proxy / ALL_PROXY).
+socks5() {
+    local host port url
+    case $# in
+        0) host=$PROXY_HOST port=$PROXY_PORT ;;
+        1) host=$PROXY_HOST port=$1 ;;
+        2) host=$1 port=$2 ;;
+        *) echo "usage: socks5 [[host] port]" >&2; return 2 ;;
+    esac
+    url="socks5://$host:$port"
+    export all_proxy=$url ALL_PROXY=$url
+    echo "socks5 on ($host:$port)"
+}
+
+unproxy() {
+    unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
+    echo "proxy off"
+}
+
 alias proxyinfo='printf "http : %s\nhttps: %s\nsocks: %s\n" "${http_proxy:-unset}" "${https_proxy:-unset}" "${all_proxy:-unset}"'
 
 
