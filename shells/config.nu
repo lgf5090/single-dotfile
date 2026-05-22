@@ -158,7 +158,7 @@ def --env __shells_load_envs [file: string] {
         if not ($line | str contains "=") { continue }
         let eq = ($line | str index-of "=")
         let key = ($line | str substring ..($eq - 1) | str trim --right)
-        mut val = ($line | str substring ($eq + 1)..)
+        mut val = ($line | str substring ($eq + 1).. | str trim)
         # Validate key: [A-Za-z_][A-Za-z0-9_]*
         if ($key | parse --regex '^[A-Za-z_][A-Za-z0-9_]*$' | is-empty) { continue }
         # Strip a single pair of matching outer quotes
