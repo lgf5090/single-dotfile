@@ -620,6 +620,10 @@ if [[ $- == *i* ]] && [ -z "${SHELLS_NO_PROMPT:-}" ]; then
         }
 
         # Prepend our callback so user's existing PROMPT_COMMAND still runs.
-        PROMPT_COMMAND="__shells_prompt${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+        # Guard against duplicates so `reload` doesn't stack the callback.
+        case ";${PROMPT_COMMAND:-};" in
+            *";__shells_prompt;"*) ;;
+            *) PROMPT_COMMAND="__shells_prompt${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
+        esac
     fi
 fi
