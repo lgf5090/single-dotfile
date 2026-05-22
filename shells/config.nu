@@ -204,10 +204,12 @@ def __shells_first_dir [...args: string] {
 # ---- Node.js ecosystem ------------------------------------------------------
 if ($env.NPM_CONFIG_PREFIX? | is-empty) { $env.NPM_CONFIG_PREFIX = ($nu.home-dir | path join ".npm-global") }
 if ($env.PNPM_HOME?         | is-empty) { $env.PNPM_HOME         = ($nu.home-dir | path join ".pnpm-global") }
-if (($nu.home-dir | path join ".nvm" "nvm.sh") | path exists)   { $env.NVM_DIR      = ($nu.home-dir | path join ".nvm") }
 if (($nu.home-dir | path join ".fnm")          | path exists)   { $env.FNM_DIR      = ($nu.home-dir | path join ".fnm") }
 if (($nu.home-dir | path join ".bun")          | path exists)   { $env.BUN_INSTALL  = ($nu.home-dir | path join ".bun") }
 if (($nu.home-dir | path join ".deno")         | path exists)   { $env.DENO_INSTALL = ($nu.home-dir | path join ".deno") }
+# nvm has no native nushell support (nvm.sh is bash-only). nu users typically
+# use fnm or volta instead; set NVM_DIR yourself in ~/.envs if you load nvm via
+# a wrapper from another shell.
 
 # ---- Go ---------------------------------------------------------------------
 if ($env.GOPATH? | is-empty) { $env.GOPATH = ($nu.home-dir | path join "go") }
