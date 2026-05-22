@@ -420,7 +420,7 @@ autocmd("BufWritePre", {
   callback = function()
     if trim_skip[vim.bo.filetype] then return end
     local pos = vim.api.nvim_win_get_cursor(0)
-    vim.cmd([[%s/\s\+$//e]])
+    vim.cmd([[keeppatterns %s/\s\+$//e]])
     vim.api.nvim_win_set_cursor(0, pos)
   end,
 })
