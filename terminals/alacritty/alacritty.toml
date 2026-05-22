@@ -1,5 +1,16 @@
 # Alacritty Terminal Configuration
 # Based on wezterm configuration
+# windows: 	%APPDATA%\alacritty\alacritty.toml
+# unix:
+# 1. $XDG_CONFIG_HOME/alacritty/alacritty.toml
+# 2. $XDG_CONFIG_HOME/alacritty.toml
+# 3. $HOME/.config/alacritty/alacritty.toml
+# 4. $HOME/.alacritty.toml
+# 5. /etc/alacritty/alacritty.toml
+
+
+# Terminal configuration (replaces deprecated shell section)
+shell = { program = "/home/linuxbrew/.linuxbrew/bin/fish", args = [] }
 
 [window]
 opacity = 0.95
@@ -108,11 +119,6 @@ blue = "#89b4fa"
 magenta = "#f5c2e7"
 cyan = "#94e2d5"
 white = "#bac2de"
-
-# Terminal configuration (replaces deprecated shell section)
-[terminal.shell]
-program = "/usr/bin/fish"  # Change based on OS preference
-args = []
 
 # Keybindings
 [[keyboard.bindings]]
