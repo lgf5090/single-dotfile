@@ -188,7 +188,7 @@ function script:__shells_load_envs([string]$file) {
         $eq = $line.IndexOf('=')
         if ($eq -lt 1) { continue }
         $key = $line.Substring(0, $eq).TrimEnd()
-        $val = $line.Substring($eq + 1)
+        $val = $line.Substring($eq + 1).Trim()
         if ($key -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { continue }
         # Strip a single pair of matching outer quotes
         if ($val.Length -ge 2) {
