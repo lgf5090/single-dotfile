@@ -306,11 +306,14 @@ export GOPATH
 # ---- Linux/WSL system libs (used by rustc / CUDA builds) --------------------
 case $SHELLS_OS in
     linux|wsl)
-        if [[ -d /usr/lib/x86_64-linux-gnu ]]; then
-            export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu${LIBRARY_PATH:+:$LIBRARY_PATH}"
-            export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-            export RUSTFLAGS="-L /usr/lib/x86_64-linux-gnu"
-        fi
+        for __shells_libdir in /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu; do
+            [[ -d $__shells_libdir ]] || continue
+            export LIBRARY_PATH="$__shells_libdir${LIBRARY_PATH:+:$LIBRARY_PATH}"
+            export LD_LIBRARY_PATH="$__shells_libdir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            export RUSTFLAGS="-L $__shells_libdir"
+            break
+        done
+        unset __shells_libdir
         ;;
 esac
 
