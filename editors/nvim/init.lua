@@ -103,7 +103,10 @@ opt.pumheight      = 10
 
 -- Misc
 opt.mouse          = "a"
-opt.clipboard      = "unnamedplus"
+-- Defer clipboard provider probe: setting `clipboard` triggers a synchronous
+-- check for xclip/wl-copy/pbcopy at startup (~50-100 ms on remote/headless
+-- boxes). `vim.schedule` runs after the UI is ready, so startup stays snappy.
+vim.schedule(function() vim.opt.clipboard = "unnamedplus" end)
 opt.updatetime     = 250
 opt.timeoutlen     = 300
 opt.list           = true
