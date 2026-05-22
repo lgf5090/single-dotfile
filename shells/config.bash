@@ -59,7 +59,6 @@ if [[ $- == *i* ]]; then
     # ==================== 普通模式 (Command Mode) ====================
     bind -m vi-command '"\C-a": beginning-of-line'       # Ctrl+A 行首
     bind -m vi-command '"\C-e": end-of-line'             # Ctrl+E 行尾
-    bind -m vi-command '9: end-of-line'                  # 9 行尾
     bind -m vi-command '"\C-f": forward-char'            # Ctrl+F 前进
     bind -m vi-command '"\C-b": backward-char'           # Ctrl+B 后退
     bind -m vi-command '"\C-d": delete-char'             # Ctrl+D 删除字符
