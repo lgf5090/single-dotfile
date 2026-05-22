@@ -204,7 +204,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
     bmap("n", "gD",         vim.lsp.buf.declaration,     "Go to declaration")
     bmap("n", "gr",         vim.lsp.buf.references,      "References")
     bmap("n", "gi",         vim.lsp.buf.implementation,  "Go to implementation")
-    bmap("n", "K",          vim.lsp.buf.hover,           "Hover doc")
+    -- K (hover) is bound automatically by nvim 0.11+ on LspAttach.
     bmap("n", "<leader>rn", vim.lsp.buf.rename,          "Rename symbol")
     bmap("n", "<leader>ca", vim.lsp.buf.code_action,     "Code action")
     bmap("n", "<leader>D",  vim.lsp.buf.type_definition, "Type definition")
