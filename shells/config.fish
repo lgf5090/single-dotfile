@@ -244,10 +244,12 @@ functions -e __shells_path_prepend __shells_load_envs __shells_load_aliases
 # ---- Node.js ecosystem ------------------------------------------------------
 set -q NPM_CONFIG_PREFIX; or set -gx NPM_CONFIG_PREFIX $HOME/.npm-global
 set -q PNPM_HOME;         or set -gx PNPM_HOME         $HOME/.pnpm-global
-test -s $HOME/.nvm/nvm.sh; and set -gx NVM_DIR      $HOME/.nvm
 test -d $HOME/.fnm;        and set -gx FNM_DIR      $HOME/.fnm
 test -d $HOME/.bun;        and set -gx BUN_INSTALL  $HOME/.bun
 test -d $HOME/.deno;       and set -gx DENO_INSTALL $HOME/.deno
+# nvm has no native fish support; users who want it typically install bass +
+# nvm.fish. This config intentionally does NOT touch NVM_DIR — set it yourself
+# in ~/.envs if you load nvm via a wrapper.
 
 # ---- Go ---------------------------------------------------------------------
 set -q GOPATH; or set -gx GOPATH $HOME/go
