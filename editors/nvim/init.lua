@@ -348,8 +348,9 @@ safe("bufferline", function(m)
       show_buffer_close_icons = false,
       show_close_icon         = false,
       diagnostics_indicator   = function(count, level)
-        local sev = vim.diagnostic.severity
-        local icon = level == sev.ERROR and "E" or level == sev.WARN and "W" or "I"
+        -- bufferline 传入的 level 是字符串（"error" / "warning" / "info" /
+        -- "hint"），不是 vim.diagnostic.severity 枚举。
+        local icon = level == "error" and "E" or level == "warning" and "W" or "I"
         return " " .. icon .. count
       end,
     },
