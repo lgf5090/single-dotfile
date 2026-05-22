@@ -60,7 +60,6 @@ bind -M insert \cv quoted-insert             # Ctrl+V 插入特殊字符
 # ==================== 普通模式 (Command Mode) ====================
 bind -M default \ca beginning-of-line        # Ctrl+A 行首
 bind -M default \ce end-of-line              # Ctrl+E 行尾
-bind -M default 9 end-of-line              # Ctrl+E 行尾
 bind -M default \cf forward-char             # Ctrl+F 前进
 bind -M default \cb backward-char            # Ctrl+B 后退
 bind -M default \cd delete-char              # Ctrl+D 删除字符
