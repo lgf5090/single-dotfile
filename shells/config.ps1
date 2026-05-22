@@ -72,7 +72,6 @@ if (Get-Command Set-PSReadLineOption -ErrorAction Ignore) {
     $__shells_vi_command = [ordered]@{
         'Ctrl+a'    = 'BeginningOfLine'               # Ctrl+A 行首
         'Ctrl+e'    = 'EndOfLine'                     # Ctrl+E 行尾
-        '9'         = 'EndOfLine'                     # 9 行尾
         'Ctrl+f'    = 'ForwardChar'                   # Ctrl+F 前进
         'Ctrl+b'    = 'BackwardChar'                  # Ctrl+B 后退
         'Ctrl+d'    = 'DeleteChar'                    # Ctrl+D 删除字符
