@@ -91,7 +91,7 @@ opt.fileencoding   = "utf-8"
 opt.swapfile       = false
 opt.backup         = false
 opt.undofile       = true
-opt.undodir        = vim.fn.stdpath("data") .. "/undo"
+opt.undodir        = vim.fs.joinpath(vim.fn.stdpath("data"), "undo")
 
 -- Splits
 opt.splitright     = true
