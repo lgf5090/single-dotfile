@@ -289,8 +289,8 @@ end
 # ---- Linux/WSL system libs (used by rustc / CUDA builds) --------------------
 switch $SHELLS_OS
     case linux wsl
-        if test -d /usr/lib/x86_64-linux-gnu
-            set -l p /usr/lib/x86_64-linux-gnu
+        for p in /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu
+            test -d $p; or continue
             if set -q LIBRARY_PATH; and test -n "$LIBRARY_PATH"
                 set -gx LIBRARY_PATH "$p:$LIBRARY_PATH"
             else
@@ -302,6 +302,7 @@ switch $SHELLS_OS
                 set -gx LD_LIBRARY_PATH $p
             end
             set -gx RUSTFLAGS "-L $p"
+            break
         end
 end
 
