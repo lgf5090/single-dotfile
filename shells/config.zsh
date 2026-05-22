@@ -545,9 +545,16 @@ proxy() {
 }
 
 socks5() {
-    local url="socks5://$PROXY_HOST:$PROXY_PORT"
+    local host port url
+    case $# in
+        0) host=$PROXY_HOST port=$PROXY_PORT ;;
+        1) host=$PROXY_HOST port=$1 ;;
+        2) host=$1 port=$2 ;;
+        *) print -u2 "usage: socks5 [[host] port]"; return 2 ;;
+    esac
+    url="socks5://$host:$port"
     export all_proxy=$url ALL_PROXY=$url
-    print "socks5 on ($PROXY_HOST:$PROXY_PORT)"
+    print "socks5 on ($host:$port)"
 }
 
 unproxy() {
