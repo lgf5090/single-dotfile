@@ -664,7 +664,10 @@ if [[ -o interactive && -z ${SHELLS_NO_PROMPT:-} ]]; then
 
         # `precmd_functions` is a zsh array of functions called before each
         # prompt. `+=` appends so the user's existing precmd hooks keep running.
-        precmd_functions+=(__shells_precmd)
+        # Guard against duplicates so `reload` doesn't stack the callback.
+        if [[ -z ${precmd_functions[(r)__shells_precmd]} ]]; then
+            precmd_functions+=(__shells_precmd)
+        fi
 
         # %F{8}  = bright black (matches bash \e[90m)
         # %F{15} = bright white (matches bash \e[97m)
