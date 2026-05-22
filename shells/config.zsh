@@ -208,6 +208,8 @@ __shells_load_envs() {
         [[ $line == *=* ]] || continue
         key=${line%%=*}; val=${line#*=}
         key=${key%${key##*[![:space:]]}}                     # rtrim key
+        val=${val#${val%%[![:space:]]*}}                     # ltrim val
+        val=${val%${val##*[![:space:]]}}                     # rtrim val
         case $key in ''|[0-9]*|*[!A-Za-z0-9_]*) continue ;; esac
         case $val in \"*\"|\'*\') val=${val[2,-2]} ;; esac   # strip outer quotes
         val=${val//\{HOME\}/$HOME}
