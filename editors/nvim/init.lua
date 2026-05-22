@@ -58,6 +58,20 @@ local function safe(mod, fn)
   if ok then fn(m) end
 end
 
+-- Lazy-load helper: 把插件的 setup() 推迟到首次触发命令时。
+-- 用于纯按需的插件（nvim-tree / telescope / trouble 等），避免启动时
+-- 把整个插件链 require 进来。
+local function lazy(mod, setup, cmd)
+  local done = false
+  return function()
+    if not done then
+      safe(mod, setup)
+      done = true
+    end
+    vim.cmd(cmd)
+  end
+end
+
 -- One-time build of telescope-fzf-native's C extension. vim.pack 0.12 has no
 -- post-install hook, so we check at startup whether libfzf.so exists and run
 -- `make` if not. After a successful build the stat check is a no-op (~µs).
@@ -163,19 +177,32 @@ map("v", ">",          ">gv",               "Indent right")
 map("v", "J",          ":m '>+1<CR>gv=gv",  "Move lines down")
 map("v", "K",          ":m '<-2<CR>gv=gv",  "Move lines up")
 
--- File explorer
-map("n", "<leader>e",  "<cmd>NvimTreeToggle<cr>", "Toggle file tree")
+-- File explorer (按需 setup —— 见 §10 配置)
+map("n", "<leader>e", lazy("nvim-tree", function(m)
+  m.setup({
+    view     = { width = 30 },
+    renderer = { group_empty = true },
+    filters  = { dotfiles = false },
+    git      = { enable = true },
+  })
+end, "NvimTreeToggle"), "Toggle file tree")
 
--- Telescope
-map("n", "<leader>ff", "<cmd>Telescope find_files<cr>",  "Find files")
-map("n", "<leader>fg", "<cmd>Telescope live_grep<cr>",   "Live grep")
-map("n", "<leader>fb", "<cmd>Telescope buffers<cr>",     "Find buffers")
-map("n", "<leader>fh", "<cmd>Telescope help_tags<cr>",   "Help tags")
-map("n", "<leader>fr", "<cmd>Telescope oldfiles<cr>",    "Recent files")
+-- Telescope (按需 setup —— 见 §15a 配置)
+local function telescope_setup(m)
+  m.setup({})
+  pcall(m.load_extension, "fzf")
+end
+map("n", "<leader>ff", lazy("telescope", telescope_setup, "Telescope find_files"), "Find files")
+map("n", "<leader>fg", lazy("telescope", telescope_setup, "Telescope live_grep"),  "Live grep")
+map("n", "<leader>fb", lazy("telescope", telescope_setup, "Telescope buffers"),    "Find buffers")
+map("n", "<leader>fh", lazy("telescope", telescope_setup, "Telescope help_tags"),  "Help tags")
+map("n", "<leader>fr", lazy("telescope", telescope_setup, "Telescope oldfiles"),   "Recent files")
 
--- Trouble diagnostics
-map("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>",              "Diagnostics")
-map("n", "<leader>xd", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", "Buffer diagnostics")
+-- Trouble diagnostics (按需 setup —— 见 §15 配置)
+map("n", "<leader>xx", lazy("trouble", function(m) m.setup() end,
+  "Trouble diagnostics toggle"), "Diagnostics")
+map("n", "<leader>xd", lazy("trouble", function(m) m.setup() end,
+  "Trouble diagnostics toggle filter.buf=0"), "Buffer diagnostics")
 
 -- ─── 4. Color Scheme ──────────────────────────────────────────────────────────
 safe("tokyonight", function(m)
@@ -358,18 +385,10 @@ safe("bufferline", function(m)
 end)
 
 -- ─── 10. File Explorer (nvim-tree) ────────────────────────────────────────────
--- Disable built-in netrw
+-- Disable built-in netrw. nvim-tree 本身延迟到 <leader>e 首次触发时再 setup
+-- (见 §3 的 keymap)。
 vim.g.loaded_netrw       = 1
 vim.g.loaded_netrwPlugin = 1
-
-safe("nvim-tree", function(m)
-  m.setup({
-    view     = { width = 30 },
-    renderer = { group_empty = true },
-    filters  = { dotfiles = false },
-    git      = { enable = true },
-  })
-end)
 
 -- ─── 11. Git Signs (gitsigns) ─────────────────────────────────────────────────
 safe("gitsigns", function(m)
@@ -420,16 +439,11 @@ safe("ibl", function(m)
 end)
 
 -- ─── 15. Diagnostics List (Trouble) ───────────────────────────────────────────
-safe("trouble", function(m) m.setup() end)
+-- 推迟到 <leader>x* 首次触发时 setup（见 §3 keymap）。
 
--- ─── 15a. Telescope (load fzf-native sorter if it built successfully) ─────────
--- telescope works with defaults so no explicit setup() was needed before, but
--- loading the fzf extension requires either an explicit setup or a separate
--- load_extension call. pcall handles the case where libfzf.so failed to build.
-safe("telescope", function(t)
-  t.setup({})
-  pcall(t.load_extension, "fzf")
-end)
+-- ─── 15a. Telescope ───────────────────────────────────────────────────────────
+-- 推迟到 <leader>f* 首次触发时 setup + load_extension("fzf")（见 §3 keymap）。
+-- pcall 处理 libfzf.so 构建失败的情形。
 
 -- ─── 16. Autocommands ─────────────────────────────────────────────────────────
 local augroup = vim.api.nvim_create_augroup
