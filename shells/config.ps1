@@ -593,9 +593,16 @@ function global:proxy {
 }
 
 function global:socks5 {
-    $url = "socks5://${env:PROXY_HOST}:${env:PROXY_PORT}"
+    $h = $env:PROXY_HOST; $p = $env:PROXY_PORT
+    switch ($args.Count) {
+        0 { }
+        1 { $p = $args[0] }
+        2 { $h = $args[0]; $p = $args[1] }
+        default { Write-Error 'usage: socks5 [[host] port]'; return }
+    }
+    $url = "socks5://${h}:${p}"
     $env:all_proxy = $url; $env:ALL_PROXY = $url
-    "socks5 on (${env:PROXY_HOST}:${env:PROXY_PORT})"
+    "socks5 on (${h}:${p})"
 }
 
 function global:unproxy {
