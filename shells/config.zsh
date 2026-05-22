@@ -469,6 +469,8 @@ alias ....='cd ../../..'
 alias -- -='cd -'
 
 alias now='date +%Y-%m-%dT%H:%M:%S%z'
+alias cls='clear'
+
 alias reload='. ~/.zshrc'
 
 # `path` prints $PATH entries one per line — uses zsh's native `path` array.

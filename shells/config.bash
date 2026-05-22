@@ -443,6 +443,8 @@ alias ....='cd ../../..'
 alias -- -='cd -'
 
 alias now='date +%Y-%m-%dT%H:%M:%S%z'
+alias cls='clear'
+
 alias reload='. ~/.bashrc'
 alias path='printf "%s\n" "$PATH" | tr ":" "\n"'
 

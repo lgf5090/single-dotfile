@@ -462,6 +462,8 @@ alias .... 'cd ../../..'
 # to define a function named `-`, so we leave it as bash's `cd -` equivalent.
 
 alias now    'date +%Y-%m-%dT%H:%M:%S%z'
+alias cls    'clear'
+
 alias reload 'source $__fish_config_dir/config.fish'
 
 # `path` prints $PATH entries one per line. NOTE: this shadows fish 3.5+'s
