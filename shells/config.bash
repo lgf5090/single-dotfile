@@ -169,13 +169,12 @@ esac
 
 # Dedup-prepend a colon-separated list onto $PATH (leftmost wins).
 # Existing PATH is always preserved at the tail — caller need not include {PATH}.
+# Pure string ops (no associative arrays) — runs on bash 3.2 (macOS default).
 __shells_path_prepend() {
-    local -A seen=()
     local out="" p IFS=:
     for p in $1:$PATH; do
         [ -z "$p" ] && continue
-        [ -n "${seen[$p]+x}" ] && continue
-        seen[$p]=1
+        case ":$out:" in *":$p:"*) continue ;; esac
         out="${out:+$out:}$p"
     done
     PATH=$out
