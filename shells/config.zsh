@@ -258,10 +258,12 @@ unset -f __shells_path_prepend __shells_load_envs __shells_load_aliases
 : ${NPM_CONFIG_PREFIX:=$HOME/.npm-global}
 : ${PNPM_HOME:=$HOME/.pnpm-global}
 export NPM_CONFIG_PREFIX PNPM_HOME
-[[ -s $HOME/.nvm/nvm.sh ]] && export NVM_DIR=$HOME/.nvm
 [[ -d $HOME/.fnm  ]]       && export FNM_DIR=$HOME/.fnm
 [[ -d $HOME/.bun  ]]       && export BUN_INSTALL=$HOME/.bun
 [[ -d $HOME/.deno ]]       && export DENO_INSTALL=$HOME/.deno
+# nvm is intentionally NOT auto-sourced (nvm.sh adds ~200-500 ms to startup).
+# Users who want it can add to ~/.zshrc:
+#     [[ -s $HOME/.nvm/nvm.sh ]] && . $HOME/.nvm/nvm.sh
 
 # ---- Go ---------------------------------------------------------------------
 : ${GOPATH:=$HOME/go}
