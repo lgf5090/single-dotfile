@@ -1,0 +1,35 @@
+# Ghostty Terminal Configuration
+# Based on wezterm configuration
+
+# Font configuration
+font-family = "Hack Nerd Font"
+font-size = 12
+
+# Theme - Catppuccin Mocha
+config-file = themes/catppuccin-mocha.conf
+
+# Window settings
+window-decoration = false
+background-opacity = 0.95
+window-padding-x = 10
+window-padding-y = 10
+
+# Initial window size (60% of screen)
+# Note: window-position-x and window-position-y have known issues on Linux
+# Removing these options to avoid configuration errors
+window-width = 144
+window-height = 36
+
+# Keybindings
+keybind = alt+f=toggle_fullscreen
+keybind = alt+t=new_tab
+keybind = alt+q=quit
+keybind = ctrl+shift+q=quit
+keybind = alt+backslash=new_split:right
+keybind = alt+enter=new_split:down
+
+# Tab configuration
+confirm-close-surface = false
+
+# Performance
+unfocused-split-opacity = 0.7
