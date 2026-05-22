@@ -410,10 +410,15 @@ local augroup = vim.api.nvim_create_augroup
 local autocmd = vim.api.nvim_create_autocmd
 
 -- Strip trailing whitespace on save
+-- Skipped for filetypes where trailing whitespace is significant:
+--   markdown — two trailing spaces = hard line break
+--   gitcommit / mail / diff / patch — payload integrity
+local trim_skip = { markdown = true, gitcommit = true, mail = true, diff = true, patch = true }
 autocmd("BufWritePre", {
   group   = augroup("TrimWhitespace", { clear = true }),
   pattern = "*",
   callback = function()
+    if trim_skip[vim.bo.filetype] then return end
     local pos = vim.api.nvim_win_get_cursor(0)
     vim.cmd([[%s/\s\+$//e]])
     vim.api.nvim_win_set_cursor(0, pos)
