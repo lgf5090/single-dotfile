@@ -250,10 +250,12 @@ Remove-Item function:__shells_path_prepend, `
 # ---- Node.js ecosystem ------------------------------------------------------
 if (-not $env:NPM_CONFIG_PREFIX) { $env:NPM_CONFIG_PREFIX = "$HOME/.npm-global" }
 if (-not $env:PNPM_HOME)         { $env:PNPM_HOME         = "$HOME/.pnpm-global" }
-if ([System.IO.File]::Exists("$HOME/.nvm/nvm.sh")) { $env:NVM_DIR     = "$HOME/.nvm" }
 if ([System.IO.Directory]::Exists("$HOME/.fnm"))   { $env:FNM_DIR     = "$HOME/.fnm" }
 if ([System.IO.Directory]::Exists("$HOME/.bun"))   { $env:BUN_INSTALL = "$HOME/.bun" }
 if ([System.IO.Directory]::Exists("$HOME/.deno"))  { $env:DENO_INSTALL= "$HOME/.deno" }
+# nvm has no native PowerShell support; users typically use nvm-windows (which
+# manages PATH itself) or nvm.fish/bass on Unix. This config does NOT touch
+# NVM_DIR — set it yourself in ~/.envs if you load nvm via a wrapper.
 
 # ---- Go ---------------------------------------------------------------------
 if (-not $env:GOPATH) { $env:GOPATH = "$HOME/go" }
