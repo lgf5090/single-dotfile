@@ -244,12 +244,14 @@ vim.diagnostic.config({
   float            = { border = "rounded", source = true },
 })
 
--- Merge nvim-cmp capabilities into every LSP server
+-- Merge nvim-cmp capabilities into every LSP server. 即便 cmp_nvim_lsp 还未
+-- 安装（首次启动时），也至少把内置 capabilities 应用到 "*"，否则补全字段
+-- 永远不会下发到 server。
+local lsp_capabilities = vim.lsp.protocol.make_client_capabilities()
 safe("cmp_nvim_lsp", function(c)
-  vim.lsp.config("*", {
-    capabilities = c.default_capabilities(),
-  })
+  lsp_capabilities = c.default_capabilities(lsp_capabilities)
 end)
+vim.lsp.config("*", { capabilities = lsp_capabilities })
 
 -- lua_ls: teach it about the vim global
 vim.lsp.config("lua_ls", {
