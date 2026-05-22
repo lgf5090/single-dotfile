@@ -306,43 +306,62 @@ vim.lsp.enable({
   "cssls",
 })
 
--- ─── 7. Autocompletion (nvim-cmp) ─────────────────────────────────────────────
-safe("cmp", function(cmp)
-  local luasnip = require("luasnip")
+-- ─── 7. Autocompletion + Auto Pairs (deferred to first InsertEnter) ─────────
+-- cmp / luasnip / autopairs 只在插入模式有意义，把它们的 setup 推迟到第一次
+-- 进入插入模式，启动期不 require 这条插件链。setup 完成后重新触发一次
+-- InsertEnter，让 cmp 内部的事件监听对当前的进入事件生效。
+vim.api.nvim_create_autocmd("InsertEnter", {
+  once  = true,
+  group = vim.api.nvim_create_augroup("CmpLazyLoad", { clear = true }),
+  callback = function()
+    safe("cmp", function(cmp)
+      local luasnip = require("luasnip")
+      cmp.setup({
+        snippet = {
+          expand = function(args) luasnip.lsp_expand(args.body) end,
+        },
+        window = {
+          completion    = cmp.config.window.bordered(),
+          documentation = cmp.config.window.bordered(),
+        },
+        mapping = cmp.mapping.preset.insert({
+          ["<C-b>"]     = cmp.mapping.scroll_docs(-4),
+          ["<C-f>"]     = cmp.mapping.scroll_docs(4),
+          ["<C-Space>"] = cmp.mapping.complete(),
+          ["<C-e>"]     = cmp.mapping.abort(),
+          ["<CR>"]      = cmp.mapping.confirm({ select = false }),
+          ["<Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then cmp.select_next_item()
+            elseif luasnip.expand_or_jumpable() then luasnip.expand_or_jump()
+            else fallback() end
+          end, { "i", "s" }),
+          ["<S-Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then cmp.select_prev_item()
+            elseif luasnip.jumpable(-1) then luasnip.jump(-1)
+            else fallback() end
+          end, { "i", "s" }),
+        }),
+        sources = cmp.config.sources({
+          { name = "nvim_lsp" },
+          { name = "luasnip" },
+          { name = "buffer" },
+          { name = "path" },
+        }),
+      })
+    end)
 
-  cmp.setup({
-    snippet = {
-      expand = function(args) luasnip.lsp_expand(args.body) end,
-    },
-    window = {
-      completion    = cmp.config.window.bordered(),
-      documentation = cmp.config.window.bordered(),
-    },
-    mapping = cmp.mapping.preset.insert({
-      ["<C-b>"]     = cmp.mapping.scroll_docs(-4),
-      ["<C-f>"]     = cmp.mapping.scroll_docs(4),
-      ["<C-Space>"] = cmp.mapping.complete(),
-      ["<C-e>"]     = cmp.mapping.abort(),
-      ["<CR>"]      = cmp.mapping.confirm({ select = false }),
-      ["<Tab>"] = cmp.mapping(function(fallback)
-        if cmp.visible() then cmp.select_next_item()
-        elseif luasnip.expand_or_jumpable() then luasnip.expand_or_jump()
-        else fallback() end
-      end, { "i", "s" }),
-      ["<S-Tab>"] = cmp.mapping(function(fallback)
-        if cmp.visible() then cmp.select_prev_item()
-        elseif luasnip.jumpable(-1) then luasnip.jump(-1)
-        else fallback() end
-      end, { "i", "s" }),
-    }),
-    sources = cmp.config.sources({
-      { name = "nvim_lsp" },
-      { name = "luasnip" },
-      { name = "buffer" },
-      { name = "path" },
-    }),
-  })
-end)
+    safe("nvim-autopairs", function(m)
+      m.setup({ check_ts = true })
+      safe("nvim-autopairs.completion.cmp", function(ap)
+        safe("cmp", function(cmp)
+          cmp.event:on("confirm_done", ap.on_confirm_done())
+        end)
+      end)
+    end)
+
+    vim.api.nvim_exec_autocmds("InsertEnter", { modeline = false })
+  end,
+})
 
 -- ─── 8. Status Line (lualine) ─────────────────────────────────────────────────
 safe("lualine", function(m)
@@ -416,15 +435,7 @@ safe("gitsigns", function(m)
 end)
 
 -- ─── 12. Auto Pairs (nvim-autopairs) ──────────────────────────────────────────
-safe("nvim-autopairs", function(m)
-  m.setup({ check_ts = true })
-  -- Integrate with cmp: auto-complete closing bracket on confirm
-  safe("nvim-autopairs.completion.cmp", function(ap)
-    safe("cmp", function(cmp)
-      cmp.event:on("confirm_done", ap.on_confirm_done())
-    end)
-  end)
-end)
+-- 已与 §7 合并到 InsertEnter once 回调里。
 
 -- ─── 13. Comments ─────────────────────────────────────────────────────────────
 -- nvim 0.10+ ships built-in comment operators: gcc (toggle line),
