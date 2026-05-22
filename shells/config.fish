@@ -507,7 +507,9 @@ end
 # =============================================================================
 
 # ---- IP / port helpers ------------------------------------------------------
-alias myip 'curl -fsS https://ifconfig.me; echo'
+function myip --description 'Show public IP'
+    curl -fsS https://ifconfig.me; and echo
+end
 
 switch $SHELLS_OS
     case linux wsl
