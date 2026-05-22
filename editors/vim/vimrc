@@ -1,0 +1,280 @@
+" =============================================================================
+"  Vim 9+ Pure-Builtins Configuration
+"  No third-party plugins. Place at ~/.vimrc or ~/.vim/vimrc.
+"
+"  Built-in substitutes used:
+"    syntax / treesitter →  :syntax enable (Vim 自带 syntax 高亮)
+"    nvim-cmp            →  内置 popupmenu + omnifunc (<C-x><C-o>) + Tab 翻页
+"    nvim-tree           →  netrw (:Lex)
+"    telescope           →  :find (path+=**)  /  :grep (rg)  /  :ls+:b
+"    lualine             →  自定义 'statusline'
+"    bufferline          →  自定义 'tabline' (列 buflisted buffer)
+"    indent-blankline    →  listchars  (Vim 8/9 不支持 leadmultispace)
+"    trouble             →  :copen / :lopen
+"    tokyonight          →  Vim 9 内置 habamax
+"    comment.nvim        →  gcc / gc 自实现 (基于 'commentstring')
+"
+"  LSP / gitsigns / autopairs 没有合适的内置等价物，刻意不提供 —— 若需要
+"  请使用专门的客户端 (vim-lsp / coc.nvim / ALE / gitgutter / ...) 并切换到
+"  另一份带插件的配置。
+" =============================================================================
+
+" ─── 1. Defaults ──────────────────────────────────────────────────────────────
+set nocompatible
+set encoding=utf-8
+scriptencoding utf-8
+
+" 必须显式开启 —— vimrc 模式不会自动启用
+syntax enable
+filetype plugin indent on
+
+" ─── 2. Options ───────────────────────────────────────────────────────────────
+" Line numbers
+set number
+set relativenumber
+
+" Indentation
+set tabstop=4
+set shiftwidth=4
+set softtabstop=4
+set expandtab
+set smartindent
+set autoindent
+
+" Search
+set hlsearch
+set incsearch
+set ignorecase
+set smartcase
+
+" Appearance
+if has('termguicolors') | set termguicolors | endif
+set cursorline
+set signcolumn=yes
+set scrolloff=8
+set sidescrolloff=8
+set nowrap
+set colorcolumn=80
+set noshowmode
+
+" Files
+set fileencoding=utf-8
+set noswapfile
+set nobackup
+set undofile
+let &undodir = expand('~/.vim/undo')
+silent! call mkdir(&undodir, 'p', 0700)
+
+" Splits
+set splitright
+set splitbelow
+
+" Completion: popup 让 omnifunc 显示文档窗口（Vim 9 popupmenu）
+set completeopt=menu,menuone,noselect,popup
+set pumheight=10
+set shortmess+=c
+
+" Misc
+set mouse=a
+set backspace=indent,eol,start
+if has('clipboard') | set clipboard=unnamedplus | endif
+set updatetime=250
+set timeoutlen=300
+set list
+set listchars=tab:»\ ,trail:·,nbsp:␣
+set ttimeout
+set ttimeoutlen=10
+set history=1000
+set lazyredraw
+
+" :find 走 'path' —— 加 ** 让它递归，配合 wildmenu 当低配模糊查找
+set path+=**
+set wildmenu
+set wildmode=longest:full,full
+set wildignore+=*/node_modules/*,*/.git/*,*/target/*,*/dist/*,*/build/*,*.o,*.pyc
+
+" :grep 优先用 ripgrep
+if executable('rg')
+  set grepprg=rg\ --vimgrep\ --no-heading\ --smart-case
+  set grepformat=%f:%l:%c:%m
+endif
+
+" ─── 3. Statusline / Tabline ──────────────────────────────────────────────────
+set laststatus=2
+set showtabline=2
+
+set statusline=
+set statusline+=\ %f
+set statusline+=\ %m%r
+set statusline+=%=
+set statusline+=\ %{&filetype}\
+set statusline+=│\ %l:%c\
+set statusline+=│\ %p%%\
+
+" bufferline 替代：在 tabline 里列出 buflisted 的 buffer
+function! MyTabline() abort
+  let l:s   = ''
+  let l:cur = bufnr('%')
+  for l:bnr in range(1, bufnr('$'))
+    if buflisted(l:bnr)
+      let l:name = bufname(l:bnr)
+      let l:name = empty(l:name) ? '[No Name]' : fnamemodify(l:name, ':t')
+      let l:hl   = l:bnr == l:cur ? '%#TabLineSel#' : '%#TabLine#'
+      let l:flag = getbufvar(l:bnr, '&modified') ? '+' : ' '
+      let l:s   .= printf('%s %d:%s%s ', l:hl, l:bnr, l:name, l:flag)
+    endif
+  endfor
+  return l:s . '%#TabLineFill#'
+endfunction
+set tabline=%!MyTabline()
+
+" ─── 4. Keymaps ───────────────────────────────────────────────────────────────
+let g:mapleader      = ' '
+let g:maplocalleader = ' '
+
+" General
+nnoremap <silent> <leader>w  :w<CR>
+nnoremap <silent> <leader>q  :q<CR>
+nnoremap <silent> <leader>Q  :qa!<CR>
+nnoremap <silent> <Esc>      :nohlsearch<CR>
+
+" Window navigation
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" Buffer management
+nnoremap <silent> <S-l>      :bnext<CR>
+nnoremap <silent> <S-h>      :bprevious<CR>
+nnoremap <silent> <leader>bd :bdelete<CR>
+
+" Splits
+nnoremap <silent> <leader>sv :vsplit<CR>
+nnoremap <silent> <leader>sh :split<CR>
+
+" Stay in indent mode after shifting
+vnoremap < <gv
+vnoremap > >gv
+
+" Move selected lines
+vnoremap J :m '>+1<CR>gv=gv
+vnoremap K :m '<-2<CR>gv=gv
+
+" File explorer (netrw)
+nnoremap <silent> <leader>e :Lex 30<CR>
+
+" 伪 Telescope：靠内置命令 + 'path'+=** / grepprg=rg
+" 这几个故意不加 <silent> —— 用户需要看到 cmdline 提示
+nnoremap <leader>ff :find
+nnoremap <leader>fg :silent grep!
+nnoremap <leader>fb :ls<CR>:b
+nnoremap <leader>fh :help
+nnoremap <silent> <leader>fr :browse oldfiles<CR>
+
+" Diagnostics list 替代：用 quickfix / loclist
+nnoremap <silent> <leader>xx :copen<CR>
+nnoremap <silent> <leader>xd :lopen<CR>
+nnoremap <silent> ]q :cnext<CR>
+nnoremap <silent> [q :cprevious<CR>
+nnoremap <silent> ]l :lnext<CR>
+nnoremap <silent> [l :lprevious<CR>
+
+" Tab / S-Tab 在补全弹出菜单里翻页（pum 不可见时是普通 Tab）
+inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+
+" 简易注释：基于 &commentstring，按 filetype 自动生效
+function! s:toggle_comment(line1, line2) abort
+  if empty(&commentstring) | return | endif
+  let l:parts = split(&commentstring, '%s', 1)
+  let l:ls    = trim(get(l:parts, 0, ''))
+  if empty(l:ls) | return | endif
+  let l:pat = '\V' . escape(l:ls, '\')
+  for l:lnum in range(a:line1, a:line2)
+    let l:line = getline(l:lnum)
+    if l:line =~ '^\s*' . l:pat
+      call setline(l:lnum, substitute(l:line, '^\(\s*\)' . l:pat . ' \?', '\1', ''))
+    elseif l:line =~ '\S'
+      let l:indent = matchstr(l:line, '^\s*')
+      call setline(l:lnum, l:indent . l:ls . ' ' . strpart(l:line, len(l:indent)))
+    endif
+  endfor
+endfunction
+nnoremap <silent> gcc :call <SID>toggle_comment(line('.'), line('.'))<CR>
+xnoremap <silent> gc  :call <SID>toggle_comment(line("'<"), line("'>"))<CR>
+
+" ─── 5. Color Scheme ──────────────────────────────────────────────────────────
+" Vim 9 自带：habamax / retrobox / sorbet / wildcharm / lunaperche / quiet
+silent! colorscheme habamax
+
+" ─── 6. Completion (built-in) ─────────────────────────────────────────────────
+" Vim 自带的补全方式：
+"   <C-x><C-o>  omnifunc        (大多数 ftplugin 已自动配置)
+"   <C-x><C-n>  buffer keywords
+"   <C-x><C-f>  file paths
+"   <C-x><C-k>  dictionary
+"   <C-n>/<C-p> keyword（默认；上面已映射到 Tab/S-Tab）
+" 兜底：没设 omnifunc 的 filetype 用 syntaxcomplete
+augroup BuiltinCompletion
+  autocmd!
+  autocmd FileType * if &omnifunc ==# '' | setlocal omnifunc=syntaxcomplete#Complete | endif
+augroup END
+
+" ─── 7. Netrw ─────────────────────────────────────────────────────────────────
+let g:netrw_banner       = 0   " 隐藏顶部 banner
+let g:netrw_liststyle    = 3   " tree 模式
+let g:netrw_winsize      = 25
+let g:netrw_browse_split = 4   " 在上一个 window 里打开文件
+let g:netrw_altv         = 1
+
+" ─── 8. Autocommands ──────────────────────────────────────────────────────────
+" 去尾随空白
+" Skipped for filetypes where trailing whitespace is significant
+augroup TrimWhitespace
+  autocmd!
+  autocmd BufWritePre * call s:trim_trailing()
+augroup END
+function! s:trim_trailing() abort
+  let l:skip = {'markdown':1, 'gitcommit':1, 'mail':1, 'diff':1, 'patch':1}
+  if has_key(l:skip, &filetype) | return | endif
+  let l:pos = getpos('.')
+  keeppatterns %s/\s\+$//e
+  call setpos('.', l:pos)
+endfunction
+
+" 特定文件类型 2-space 缩进
+augroup IndentOverride
+  autocmd!
+  autocmd FileType lua,javascript,typescript,html,css,json,yaml
+        \ setlocal tabstop=2 shiftwidth=2
+augroup END
+
+" 终端进入插入模式（Vim 8 的 :terminal）
+if exists('##TerminalOpen')
+  augroup TermInsert
+    autocmd!
+    autocmd TerminalOpen * startinsert
+  augroup END
+endif
+
+" Tabline 重绘（buffer 增删/修改时）
+augroup RedrawTabline
+  autocmd!
+  autocmd BufAdd,BufDelete,BufWritePost * redrawtabline
+augroup END
+
+" Yank 高亮：matchadd + timer，150 ms 后自动清除
+" 需要 Vim 8.0+（timer_start 与 matchadd 都成熟）
+if exists('##TextYankPost') && has('timers')
+  augroup YankHighlight
+    autocmd!
+    autocmd TextYankPost * silent! call s:yank_highlight()
+  augroup END
+  function! s:yank_highlight() abort
+    let l:m = matchadd('IncSearch',
+          \ '\%' . line("'[") . 'l\%>' . (col("'[") - 1) .
+          \ 'v\%<' . (col("']") + 1) . 'v')
+    call timer_start(150, {-> execute('silent! call matchdelete(' . l:m . ')')})
+  endfunction
+endif
