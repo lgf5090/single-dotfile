@@ -484,7 +484,7 @@ esac
 # =============================================================================
 
 # ---- IP / port helpers ------------------------------------------------------
-alias myip='curl -fsS https://ifconfig.me; echo'
+myip() { curl -fsS https://ifconfig.me && echo; }
 
 case "$SHELLS_OS" in
     linux|wsl)         alias localip='hostname -I'; alias ports='ss -tulnp' ;;
