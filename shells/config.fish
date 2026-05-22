@@ -187,7 +187,7 @@ function __shells_load_envs
         string match -q '*=*' -- $line; or continue
         set -l parts (string split -m 1 = -- $line)
         set -l key (string trim -- $parts[1])
-        set -l val $parts[2]
+        set -l val (string trim -- $parts[2])
         string match -qr '^[A-Za-z_][A-Za-z0-9_]*$' -- $key; or continue
         # Strip a single outer pair of matching quotes
         switch $val
