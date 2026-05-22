@@ -64,7 +64,6 @@ if [[ -o interactive ]]; then
     # ==================== 普通模式 (Command Mode) ====================
     bindkey -M vicmd '^A'    beginning-of-line               # Ctrl+A 行首
     bindkey -M vicmd '^E'    end-of-line                     # Ctrl+E 行尾
-    bindkey -M vicmd '9'     end-of-line                     # 9 行尾
     bindkey -M vicmd '^F'    forward-char                    # Ctrl+F 前进
     bindkey -M vicmd '^B'    backward-char                   # Ctrl+B 后退
     bindkey -M vicmd '^D'    delete-char                     # Ctrl+D 删除字符
