@@ -519,11 +519,15 @@ def --env proxy [...args: string] {
     print $"proxy on  \(($host):($port)\)"
 }
 
-def --env socks5 [] {
-    let url = $"socks5://($env.PROXY_HOST):($env.PROXY_PORT)"
+def --env socks5 [...args: string] {
+    let n = ($args | length)
+    let host = if $n == 2 { $args.0 } else { $env.PROXY_HOST }
+    let port = if $n == 2 { $args.1 } else if $n == 1 { $args.0 } else { $env.PROXY_PORT }
+    if $n > 2 { print -e "usage: socks5 [[host] port]"; return }
+    let url = $"socks5://($host):($port)"
     $env.all_proxy = $url
     $env.ALL_PROXY = $url
-    print $"socks5 on \(($env.PROXY_HOST):($env.PROXY_PORT)\)"
+    print $"socks5 on \(($host):($port)\)"
 }
 
 def --env unproxy [] {
