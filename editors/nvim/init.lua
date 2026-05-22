@@ -38,9 +38,6 @@ vim.pack.add({
   -- Auto pairs
   { src = "https://github.com/windwp/nvim-autopairs" },
 
-  -- Comments
-  { src = "https://github.com/numToStr/Comment.nvim" },
-
   -- Indent guides
   { src = "https://github.com/lukas-reineke/indent-blankline.nvim" },
 
@@ -392,9 +389,9 @@ safe("nvim-autopairs", function(m)
   end)
 end)
 
--- ─── 13. Comments (Comment.nvim) ──────────────────────────────────────────────
--- gcc: toggle line comment | gc{motion}: comment region | gbc: block comment
-safe("Comment", function(m) m.setup() end)
+-- ─── 13. Comments ─────────────────────────────────────────────────────────────
+-- nvim 0.10+ ships built-in comment operators: gcc (toggle line),
+-- gc{motion} (toggle region), gbc (block comment). No plugin needed.
 
 -- ─── 14. Indent Guides (indent-blankline) ─────────────────────────────────────
 safe("ibl", function(m)
