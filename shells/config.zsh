@@ -13,6 +13,25 @@
 # Targets zsh 5.0+ (uses typeset -U, glob qualifiers, $+commands, %F prompt).
 # =============================================================================
 
+# Set history options
+# 历史记录文件路径
+export HISTFILE=~/.zsh_history
+# 内存中保存的历史条数
+export HISTSIZE=10000
+# 文件中保存的历史条数
+export SAVEHIST=10000
+# 追加而不是覆盖历史文件
+setopt APPEND_HISTORY
+# 多个终端会话共享历史（实时同步）
+setopt SHARE_HISTORY
+# 去除重复命令
+setopt HIST_IGNORE_DUPS
+# 去除连续重复命令
+setopt HIST_IGNORE_ALL_DUPS
+# 记录命令执行时间
+setopt EXTENDED_HISTORY
+
+
 # Only in interactive shell
 if [[ -o interactive ]]; then
     # 启用 Vi 模式
