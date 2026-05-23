@@ -474,7 +474,7 @@ elseif is_linux or is_darwin then
   if is_darwin then
     config.default_prog = { 'zsh' }  -- macOS默认使用zsh
   else
-    config.default_prog = { 'fish' } -- Linux默认使用bash
+    config.default_prog = { 'zsh' } -- Linux默认使用bash
   end
 end
 
