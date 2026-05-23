@@ -8,13 +8,12 @@
 # 4. $HOME/.alacritty.toml
 # 5. /etc/alacritty/alacritty.toml
 
-
 # Terminal configuration (replaces deprecated shell section)
 shell = { program = "/home/linuxbrew/.linuxbrew/bin/fish", args = [] }
 
 [window]
 opacity = 0.95
-decorations = "None"
+decorations = "none"
 startup_mode = "Windowed"
 dynamic_title = true
 
