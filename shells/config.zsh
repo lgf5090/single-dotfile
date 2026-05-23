@@ -468,6 +468,8 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias -- -='cd -'
 
+alias md='mkdir -p'
+
 alias now='date +%Y-%m-%dT%H:%M:%S%z'
 alias cls='clear'
 

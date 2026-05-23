@@ -417,6 +417,8 @@ alias grep  = ^grep --color=auto
 alias fgrep = ^fgrep --color=auto
 alias egrep = ^egrep --color=auto
 
+alias md = mkdir
+
 alias cls = clear
 
 # Directory nav aliases (`..`, `...`, `....`) and `-` (cd back) aren't valid

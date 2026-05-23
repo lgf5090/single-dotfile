@@ -659,6 +659,12 @@ function global:....
 # `cd -` works natively in pwsh 7+ (toggle to previous dir). The bash `alias -`
 # can't be replicated — `-` is not a valid PowerShell function name.
 
+function global:md
+{
+    param([string]$Path)
+    New-Item -ItemType Directory -Path $Path -Force | Out-Null
+}
+
 function global:now
 { Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz'
 }

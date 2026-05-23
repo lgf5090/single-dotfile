@@ -461,6 +461,8 @@ alias .... 'cd ../../..'
 # fish 3.4+ supports `cd -` natively (toggle to previous dir). fish refuses
 # to define a function named `-`, so we leave it as bash's `cd -` equivalent.
 
+alias md 'mkdir -p'
+
 alias now    'date +%Y-%m-%dT%H:%M:%S%z'
 alias cls    'clear'
 
