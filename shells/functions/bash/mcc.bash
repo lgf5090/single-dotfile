@@ -34,6 +34,9 @@ declare -gA _MCC_ALIASES=(
     [sf]=siliconflow
 )
 
+# --effort 合法取值（首项为默认值）
+declare -ga _MCC_EFFORT_LEVELS=(max normal min)
+
 # ============================================================
 # 内部工具函数
 # ============================================================
@@ -42,6 +45,14 @@ declare -gA _MCC_ALIASES=(
 _mcc_parse_config() {
     IFS='|' read -r _MCC_DEFAULT_URL _MCC_KEY_ENV _MCC_URL_ENV _MCC_BIG_MODEL _MCC_SMALL_MODEL \
         <<< "${_MCC_PROVIDERS[$1]}"
+}
+
+# 检测 $1 是否在剩余参数中（用于校验受限取值集合）
+_mcc_in() {
+    local needle="$1"; shift
+    local item
+    for item in "$@"; do [[ "$item" == "$needle" ]] && return 0; done
+    return 1
 }
 
 # 掩码显示 API key（仅展示前8位）
@@ -108,7 +119,7 @@ _mcc_completion() {
 
     # --effort 补全固定值
     if [[ "$prev" == "-e" || "$prev" == "--effort" ]]; then
-        COMPREPLY=( $(compgen -W "max normal min" -- "$cur") )
+        COMPREPLY=( $(compgen -W "${_MCC_EFFORT_LEVELS[*]}" -- "$cur") )
         return 0
     fi
 
@@ -175,9 +186,9 @@ function mcc() {
                 custom_model="$2"; shift 2
                 ;;
             -e|--effort)
-                [[ $# -lt 2 ]] && { echo "Error: --effort requires a value (max|normal|min)"; return 1; }
-                [[ "$2" != "max" && "$2" != "normal" && "$2" != "min" ]] && {
-                    echo "Error: --effort must be one of: max, normal, min"; return 1
+                [[ $# -lt 2 ]] && { echo "Error: --effort requires a value (${_MCC_EFFORT_LEVELS[*]})"; return 1; }
+                _mcc_in "$2" "${_MCC_EFFORT_LEVELS[@]}" || {
+                    echo "Error: --effort must be one of: ${_MCC_EFFORT_LEVELS[*]}"; return 1
                 }
                 effort="$2"; shift 2
                 ;;
@@ -219,7 +230,7 @@ function mcc() {
     if [[ -n "$big_model" ]]; then
         printf "Big Model : %s\n" "$big_model"
         printf "Sm Model  : %s\n" "$small_model"
-        printf "Effort    : %s\n" "${effort:-max}"
+        printf "Effort    : %s\n" "${effort:-${_MCC_EFFORT_LEVELS[0]}}"
     fi
     $resume && printf "Mode      : resume\n"
     echo
@@ -244,7 +255,7 @@ function mcc() {
         export ANTHROPIC_DEFAULT_SONNET_MODEL="$big_model"
         export ANTHROPIC_DEFAULT_HAIKU_MODEL="$small_model"
         export CLAUDE_CODE_SUBAGENT_MODEL="$small_model"
-        export CLAUDE_CODE_EFFORT_LEVEL="${effort:-max}"
+        export CLAUDE_CODE_EFFORT_LEVEL="${effort:-${_MCC_EFFORT_LEVELS[0]}}"
         export API_TIMEOUT_MS=600000
         export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
     fi
