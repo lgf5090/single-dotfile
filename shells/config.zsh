@@ -715,6 +715,37 @@ fi
 
 
 
+_load_configs() {
+    local script_dir=${${(%):-%x}:A:h}
+
+    local -ra _dirs=(
+        conf.d/zsh
+        functions/zsh
+        completions/zsh
+    )
+
+    setopt LOCAL_OPTIONS NULL_GLOB
+
+    local dir file
+    for dir in "${_dirs[@]}"; do
+        for file in "$script_dir/$dir"/*.zsh; do
+            if [[ -r "$file" ]]; then
+                source "$file" || print -u2 "Warning: failed to source: $file"
+            else
+                print -u2 "Warning: not readable: $file"
+            fi
+        done
+    done
+}
+
+_load_configs
+unset -f _load_configs
+
+
+
+
+
+
 # =============================================================================
 # SECTION 11 — Zsh Plugins
 # =============================================================================
