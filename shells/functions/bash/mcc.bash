@@ -69,6 +69,9 @@ _mcc_in() {
     return 1
 }
 
+# 输出错误到 stderr（调用方负责 return 退出码）
+_mcc_err() { echo "Error: $*" >&2; }
+
 # 掩码显示 API key（仅展示前8位）
 _mcc_mask() { echo "${1:0:8}****"; }
 
@@ -170,7 +173,7 @@ complete -F _mcc_completion mcc
 # ============================================================
 function mcc() {
     if [[ $# -eq 0 ]]; then
-        echo "Error: provider required"; echo
+        _mcc_err "provider required"; echo
         _mcc_list; return 1
     fi
 
@@ -183,8 +186,8 @@ function mcc() {
     provider="${_MCC_ALIASES[$provider]:-$provider}"
 
     if [[ ! -v _MCC_PROVIDERS[$provider] ]]; then
-        echo "Error: unknown provider '$provider'"
-        echo "       Run 'mcc --list' to see available providers."
+        _mcc_err "unknown provider '$provider'"
+        echo "       Run 'mcc --list' to see available providers." >&2
         return 1
     fi
 
@@ -196,21 +199,21 @@ function mcc() {
         case "$1" in
             -r|--resume) resume=true; shift ;;
             -m|--model)
-                [[ $# -lt 2 ]] && { echo "Error: --model requires a value"; return 1; }
+                [[ $# -lt 2 ]] && { _mcc_err "--model requires a value"; return 1; }
                 custom_model="$2"; shift 2
                 ;;
             -e|--effort)
-                [[ $# -lt 2 ]] && { echo "Error: --effort requires a value (${_MCC_EFFORT_LEVELS[*]})"; return 1; }
+                [[ $# -lt 2 ]] && { _mcc_err "--effort requires a value (${_MCC_EFFORT_LEVELS[*]})"; return 1; }
                 _mcc_in "$2" "${_MCC_EFFORT_LEVELS[@]}" || {
-                    echo "Error: --effort must be one of: ${_MCC_EFFORT_LEVELS[*]}"; return 1
+                    _mcc_err "--effort must be one of: ${_MCC_EFFORT_LEVELS[*]}"; return 1
                 }
                 effort="$2"; shift 2
                 ;;
             -*)
-                echo "Error: unknown option '$1'"; return 1
+                _mcc_err "unknown option '$1'"; return 1
                 ;;
             *)
-                [[ -n "$key_suffix" ]] && { echo "Error: unexpected argument '$1'"; return 1; }
+                [[ -n "$key_suffix" ]] && { _mcc_err "unexpected argument '$1'"; return 1; }
                 key_suffix="$1"; shift
                 ;;
         esac
@@ -219,8 +222,8 @@ function mcc() {
     # 确定 API key
     local key_var="${_MCC_KEY_ENV}${key_suffix:+_$key_suffix}"
     if [[ -z "${!key_var}" ]]; then
-        echo "Error: '$key_var' is not set"
-        echo "       export $key_var=your_api_key"
+        _mcc_err "'$key_var' is not set"
+        echo "       export $key_var=your_api_key" >&2
         return 1
     fi
 
