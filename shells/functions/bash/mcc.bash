@@ -37,6 +37,20 @@ declare -gA _MCC_ALIASES=(
 # --effort 合法取值（首项为默认值）
 declare -ga _MCC_EFFORT_LEVELS=(max normal min)
 
+# 由 mcc 托管的环境变量（每次调用都会先清理，避免上一次设置残留）
+# 含已废弃变量（如 ANTHROPIC_SMALL_FAST_MODEL）以防新旧版混用
+declare -ga _MCC_MANAGED_VARS=(
+    ANTHROPIC_MODEL
+    ANTHROPIC_DEFAULT_OPUS_MODEL
+    ANTHROPIC_DEFAULT_SONNET_MODEL
+    ANTHROPIC_DEFAULT_HAIKU_MODEL
+    ANTHROPIC_SMALL_FAST_MODEL
+    CLAUDE_CODE_SUBAGENT_MODEL
+    CLAUDE_CODE_EFFORT_LEVEL
+    API_TIMEOUT_MS
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+)
+
 # ============================================================
 # 内部工具函数
 # ============================================================
@@ -235,16 +249,8 @@ function mcc() {
     $resume && printf "Mode      : resume\n"
     echo
 
-    # 清理所有相关旧环境变量（含已废弃变量，防残留）
-    unset ANTHROPIC_MODEL \
-          ANTHROPIC_DEFAULT_OPUS_MODEL \
-          ANTHROPIC_DEFAULT_SONNET_MODEL \
-          ANTHROPIC_DEFAULT_HAIKU_MODEL \
-          ANTHROPIC_SMALL_FAST_MODEL \
-          CLAUDE_CODE_SUBAGENT_MODEL \
-          CLAUDE_CODE_EFFORT_LEVEL \
-          API_TIMEOUT_MS \
-          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+    # 清理上次会话留下的相关环境变量（变量列表见 _MCC_MANAGED_VARS）
+    unset "${_MCC_MANAGED_VARS[@]}"
 
     export ANTHROPIC_BASE_URL="$base_url"
     export ANTHROPIC_AUTH_TOKEN="${!key_var}"
