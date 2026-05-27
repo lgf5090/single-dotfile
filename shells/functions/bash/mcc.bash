@@ -20,7 +20,7 @@ declare -gA _MCC_PROVIDERS=(
     [agentrouter]="https://agentrouter.org|AGENTROUTER_API_KEY|AGENTROUTER_BASE_URL||"
     [anyrouter]="https://anyrouter.top|ANYROUTER_API_KEY|ANYROUTER_BASE_URL||"
     [deepseek]="https://api.deepseek.com/anthropic|DEEPSEEK_API_KEY|DEEPSEEK_BASE_URL|deepseek-v4-pro[1m]|deepseek-v4-flash"
-    [kimi]="https://api.moonshot.cn/anthropic|MOONSHOT_API_KEY|MOONSHOT_BASE_URL|kimi-k2.6|kimi-k2.6"
+    [moonshot]="https://api.moonshot.cn/anthropic|MOONSHOT_API_KEY|MOONSHOT_BASE_URL|kimi-k2.6|kimi-k2.6"
     [glm]="https://open.bigmodel.cn/api/anthropic|GLM_API_KEY|GLM_BASE_URL|GLM-5.1|GLM-5.1"
     [siliconflow]="https://api.siliconflow.cn/|SILICONFLOW_API_KEY|SILICONFLOW_BASE_URL|deepseek-ai/DeepSeek-V4-Pro|deepseek-ai/DeepSeek-V4-Flash"
 )
@@ -30,7 +30,8 @@ declare -gA _MCC_ALIASES=(
     [tr]=agentrouter
     [yr]=anyrouter
     [ds]=deepseek
-    [km]=kimi
+    [km]=moonshot
+    [kimi]=moonshot
     [sf]=siliconflow
 )
 
