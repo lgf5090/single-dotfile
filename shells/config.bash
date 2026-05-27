@@ -656,3 +656,32 @@ if [[ $- == *i* ]] && [ -z "${SHELLS_NO_PROMPT:-}" ]; then
         esac
     fi
 fi
+
+
+
+# Load all directories - simple and direct
+_load_configs() {
+    local script_dir file dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || return
+
+    # 启用 nullglob
+    shopt -s nullglob
+
+    for dir in conf.d functions completions; do
+        for file in "$script_dir/$dir/bash"/*.bash; do
+            if [[ -r "$file" ]]; then
+                source "$file"
+            else
+                printf "Warning: %s exists but is not readable\n" "$file" >&2
+            fi
+        done
+    done
+
+    # 恢复 nullglob（避免影响其他代码）
+    shopt -u nullglob
+}
+
+_load_configs
+unset -f _load_configs
+
+
