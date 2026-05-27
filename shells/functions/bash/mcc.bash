@@ -17,17 +17,21 @@
 # 留空       → 不设置模型变量（适用于透传代理）
 # ============================================================
 declare -gA _MCC_PROVIDERS=(
-    [tr]="https://agentrouter.org|AGENTROUTER_API_KEY|AGENTROUTER_BASE_URL||"
     [agentrouter]="https://agentrouter.org|AGENTROUTER_API_KEY|AGENTROUTER_BASE_URL||"
-    [yr]="https://anyrouter.top|ANYROUTER_API_KEY|ANYROUTER_BASE_URL||"
     [anyrouter]="https://anyrouter.top|ANYROUTER_API_KEY|ANYROUTER_BASE_URL||"
-    [ds]="https://api.deepseek.com/anthropic|DEEPSEEK_API_KEY|DEEPSEEK_BASE_URL|deepseek-v4-pro[1m]|deepseek-v4-flash"
     [deepseek]="https://api.deepseek.com/anthropic|DEEPSEEK_API_KEY|DEEPSEEK_BASE_URL|deepseek-v4-pro[1m]|deepseek-v4-flash"
-    [km]="https://api.moonshot.cn/anthropic|MOONSHOT_API_KEY|MOONSHOT_BASE_URL|kimi-k2.6|kimi-k2.6"
     [kimi]="https://api.moonshot.cn/anthropic|MOONSHOT_API_KEY|MOONSHOT_BASE_URL|kimi-k2.6|kimi-k2.6"
     [glm]="https://open.bigmodel.cn/api/anthropic|GLM_API_KEY|GLM_BASE_URL|GLM-5.1|GLM-5.1"
-    [sf]="https://api.siliconflow.cn/|SILICONFLOW_API_KEY|SILICONFLOW_BASE_URL|deepseek-ai/DeepSeek-V4-Pro|deepseek-ai/DeepSeek-V4-Flash"
     [siliconflow]="https://api.siliconflow.cn/|SILICONFLOW_API_KEY|SILICONFLOW_BASE_URL|deepseek-ai/DeepSeek-V4-Pro|deepseek-ai/DeepSeek-V4-Flash"
+)
+
+# 别名 → 规范名（新增别名只需在此添加一行）
+declare -gA _MCC_ALIASES=(
+    [tr]=agentrouter
+    [yr]=anyrouter
+    [ds]=deepseek
+    [km]=kimi
+    [sf]=siliconflow
 )
 
 # ============================================================
@@ -47,9 +51,16 @@ _mcc_mask() { echo "${1:0:8}****"; }
 _mcc_list() {
     echo "Providers:"
     echo "----------"
-    local p
+    local p a aliases display
     for p in $(printf '%s\n' "${!_MCC_PROVIDERS[@]}" | sort); do
         _mcc_parse_config "$p"
+        # 收集该规范名的所有别名
+        aliases=""
+        for a in "${!_MCC_ALIASES[@]}"; do
+            [[ "${_MCC_ALIASES[$a]}" == "$p" ]] && aliases+="$a, "
+        done
+        display="$p"
+        [[ -n "$aliases" ]] && display+=" (${aliases%, })"
         local url="${!_MCC_URL_ENV:-$_MCC_DEFAULT_URL}"
         local from_env=""; [[ -n "${!_MCC_URL_ENV}" ]] && from_env="  [from \$$_MCC_URL_ENV]"
         local model_info=""
@@ -57,7 +68,7 @@ _mcc_list() {
             model_info="  big=$_MCC_BIG_MODEL"
             [[ "$_MCC_SMALL_MODEL" != "$_MCC_BIG_MODEL" ]] && model_info+=" / small=$_MCC_SMALL_MODEL"
         fi
-        printf "  %-14s %s%s%s\n" "$p" "$url" "$from_env" "$model_info"
+        printf "  %-20s %s%s%s\n" "$display" "$url" "$from_env" "$model_info"
     done
     cat <<'EOF'
 
@@ -102,7 +113,7 @@ _mcc_completion() {
     fi
 
     local providers opts
-    providers=$(printf '%s ' "${!_MCC_PROVIDERS[@]}")
+    providers=$(printf '%s ' "${!_MCC_PROVIDERS[@]}" "${!_MCC_ALIASES[@]}")
     opts="-l --list -r --resume -m --model -e --effort"
 
     case ${COMP_CWORD} in
@@ -111,6 +122,7 @@ _mcc_completion() {
             ;;
         2)
             local p="${COMP_WORDS[1]}"
+            p="${_MCC_ALIASES[$p]:-$p}"
             if [[ -v _MCC_PROVIDERS[$p] ]]; then
                 _mcc_parse_config "$p"
                 local suffixes="" var
@@ -142,6 +154,8 @@ function mcc() {
     fi
 
     local provider="$1"; shift
+    # 规范化别名
+    provider="${_MCC_ALIASES[$provider]:-$provider}"
 
     if [[ ! -v _MCC_PROVIDERS[$provider] ]]; then
         echo "Error: unknown provider '$provider'"
