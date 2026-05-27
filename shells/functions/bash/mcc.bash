@@ -72,6 +72,11 @@ _mcc_in() {
 # 输出错误到 stderr（调用方负责 return 退出码）
 _mcc_err() { echo "Error: $*" >&2; }
 
+# 若指定的环境变量已设置（即用户覆盖了默认 URL），返回 "  (from $VAR)" 标记
+_mcc_url_origin() {
+    [[ -n "${!1}" ]] && printf '  (from $%s)' "$1"
+}
+
 # 掩码显示 API key（仅展示前8位）
 _mcc_mask() { echo "${1:0:8}****"; }
 
@@ -90,7 +95,7 @@ _mcc_list() {
         display="$p"
         [[ -n "$aliases" ]] && display+=" (${aliases%, })"
         local url="${!_MCC_URL_ENV:-$_MCC_DEFAULT_URL}"
-        local from_env=""; [[ -n "${!_MCC_URL_ENV}" ]] && from_env="  [from \$$_MCC_URL_ENV]"
+        local from_env="$(_mcc_url_origin "$_MCC_URL_ENV")"
         local model_info=""
         if [[ -n "$_MCC_BIG_MODEL" ]]; then
             model_info="  big=$_MCC_BIG_MODEL"
@@ -171,7 +176,7 @@ complete -F _mcc_completion mcc
 # ============================================================
 # 主函数
 # ============================================================
-function mcc() {
+mcc() {
     if [[ $# -eq 0 ]]; then
         _mcc_err "provider required"; echo
         _mcc_list; return 1
@@ -242,7 +247,7 @@ function mcc() {
 
     # 打印启动摘要（key 掩码）
     printf "Provider  : %s\n"   "$provider"
-    printf "Base URL  : %s%s\n" "$base_url" "${!_MCC_URL_ENV:+  (from \$$_MCC_URL_ENV)}"
+    printf "Base URL  : %s%s\n" "$base_url" "$(_mcc_url_origin "$_MCC_URL_ENV")"
     printf "API Key   : %s  (%s)\n" "$(_mcc_mask "${!key_var}")" "$key_var"
     if [[ -n "$big_model" ]]; then
         printf "Big Model : %s\n" "$big_model"
