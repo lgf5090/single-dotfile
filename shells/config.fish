@@ -698,3 +698,30 @@ if not set -q SHELLS_NO_PROMPT
         end
     end
 end
+
+
+
+function _load_configs
+    set script_dir (dirname (status filename))
+
+    set dirs conf.d/fish functions/fish completions/fish
+
+    for dir in $dirs
+        set dir_path "$script_dir/$dir"
+        for file in $dir_path/*.fish
+            if test -e "$file"
+                if test -r "$file"
+                    source "$file"
+                    or echo "Warning: failed to source: $file" >&2
+                else
+                    echo "Warning: not readable: $file" >&2
+                end
+            end
+        end
+    end
+end
+
+_load_configs
+functions -e _load_configs
+
+
