@@ -661,24 +661,32 @@ fi
 
 # Load all directories - simple and direct
 _load_configs() {
-    local script_dir file dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || return
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || return 1
 
-    # 启用 nullglob
+    # 扩展目录：只需在此处增删一行
+    local -ra _dirs=(
+        conf.d/bash
+        functions/bash
+        completions/bash
+    )
+
+    local nullglob_state dir file
+    nullglob_state=$(shopt -p nullglob)
     shopt -s nullglob
 
-    for dir in conf.d functions completions; do
-        for file in "$script_dir/$dir/bash"/*.bash; do
+    for dir in "${_dirs[@]}"; do
+        for file in "$script_dir/$dir"/*.bash; do
             if [[ -r "$file" ]]; then
-                source "$file"
+                # shellcheck source=/dev/null
+                source "$file" || printf 'Warning: failed to source: %s\n' "$file" >&2
             else
-                printf "Warning: %s exists but is not readable\n" "$file" >&2
+                printf 'Warning: not readable: %s\n' "$file" >&2
             fi
         done
     done
 
-    # 恢复 nullglob（避免影响其他代码）
-    shopt -u nullglob
+    eval "$nullglob_state"
 }
 
 _load_configs
