@@ -59,6 +59,11 @@ declare -ga _MCC_MANAGED_VARS=(
 _mcc_parse_config() {
     IFS='|' read -r _MCC_DEFAULT_URL _MCC_KEY_ENV _MCC_URL_ENV _MCC_BIG_MODEL _MCC_SMALL_MODEL \
         <<< "${_MCC_PROVIDERS[$1]}"
+    # 模型环境变量名按约定派生：<PREFIX>_BIG_MODEL / <PREFIX>_SMALL_MODEL
+    # 其中 <PREFIX> 取自 _MCC_KEY_ENV 去掉 _API_KEY 后缀（如 DEEPSEEK_API_KEY → DEEPSEEK）
+    local prefix="${_MCC_KEY_ENV%_API_KEY}"
+    _MCC_BIG_MODEL_ENV="${prefix}_BIG_MODEL"
+    _MCC_SMALL_MODEL_ENV="${prefix}_SMALL_MODEL"
 }
 
 # 检测 $1 是否在剩余参数中（用于校验受限取值集合）
@@ -72,8 +77,8 @@ _mcc_in() {
 # 输出错误到 stderr（调用方负责 return 退出码）
 _mcc_err() { echo "Error: $*" >&2; }
 
-# 若指定的环境变量已设置（即用户覆盖了默认 URL），返回 "  (from $VAR)" 标记
-_mcc_url_origin() {
+# 若指定的环境变量已设置（即用户覆盖了配置默认值），返回 "  (from $VAR)" 标记
+_mcc_origin() {
     [[ -n "${!1}" ]] && printf '  (from $%s)' "$1"
 }
 
@@ -95,11 +100,16 @@ _mcc_list() {
         display="$p"
         [[ -n "$aliases" ]] && display+=" (${aliases%, })"
         local url="${!_MCC_URL_ENV:-$_MCC_DEFAULT_URL}"
-        local from_env="$(_mcc_url_origin "$_MCC_URL_ENV")"
+        local from_env="$(_mcc_origin "$_MCC_URL_ENV")"
         local model_info=""
-        if [[ -n "$_MCC_BIG_MODEL" ]]; then
-            model_info="  big=$_MCC_BIG_MODEL"
-            [[ "$_MCC_SMALL_MODEL" != "$_MCC_BIG_MODEL" ]] && model_info+=" / small=$_MCC_SMALL_MODEL"
+        local cfg_big="${!_MCC_BIG_MODEL_ENV:-$_MCC_BIG_MODEL}"
+        local cfg_small="${!_MCC_SMALL_MODEL_ENV:-$_MCC_SMALL_MODEL}"
+        if [[ -n "$cfg_big" || -n "$cfg_small" ]]; then
+            [[ -z "$cfg_big"   ]] && cfg_big="$cfg_small"
+            [[ -z "$cfg_small" ]] && cfg_small="$cfg_big"
+            model_info="  big=${cfg_big}$(_mcc_origin "$_MCC_BIG_MODEL_ENV")"
+            [[ "$cfg_small" != "$cfg_big" || -n "${!_MCC_SMALL_MODEL_ENV}" ]] && \
+                model_info+=" / small=${cfg_small}$(_mcc_origin "$_MCC_SMALL_MODEL_ENV")"
         fi
         printf "  %-20s %s%s%s\n" "$display" "$url" "$from_env" "$model_info"
     done
@@ -116,8 +126,10 @@ Examples:
   mcc ds -e normal                    # 指定 effort level
   mcc kimi 1234 --resume              # 带 key 后缀 + 恢复会话
 
-Override base URL:
+Override base URL / model (env var prefix matches the provider's *_API_KEY):
   export DEEPSEEK_BASE_URL='https://custom.host'
+  export DEEPSEEK_BIG_MODEL='custom-pro'
+  export DEEPSEEK_SMALL_MODEL='custom-flash'
 
 Model env vars applied (when model is configured):
   ANTHROPIC_MODEL
@@ -235,23 +247,30 @@ mcc() {
     # 确定 base URL（环境变量优先）
     local base_url="${!_MCC_URL_ENV:-$_MCC_DEFAULT_URL}"
 
-    # 确定模型（--model 同时覆盖 big 和 small）
+    # 确定模型（优先级：--model > 环境变量 > 配置默认；任一为空则复用另一个）
     local big_model small_model
     if [[ -n "$custom_model" ]]; then
         big_model="$custom_model"
         small_model="$custom_model"
     else
-        big_model="$_MCC_BIG_MODEL"
-        small_model="$_MCC_SMALL_MODEL"
+        big_model="${!_MCC_BIG_MODEL_ENV:-$_MCC_BIG_MODEL}"
+        small_model="${!_MCC_SMALL_MODEL_ENV:-$_MCC_SMALL_MODEL}"
+        [[ -z "$big_model"   ]] && big_model="$small_model"
+        [[ -z "$small_model" ]] && small_model="$big_model"
     fi
 
     # 打印启动摘要（key 掩码）
     printf "Provider  : %s\n"   "$provider"
-    printf "Base URL  : %s%s\n" "$base_url" "$(_mcc_url_origin "$_MCC_URL_ENV")"
+    printf "Base URL  : %s%s\n" "$base_url" "$(_mcc_origin "$_MCC_URL_ENV")"
     printf "API Key   : %s  (%s)\n" "$(_mcc_mask "${!key_var}")" "$key_var"
     if [[ -n "$big_model" ]]; then
-        printf "Big Model : %s\n" "$big_model"
-        printf "Sm Model  : %s\n" "$small_model"
+        local big_tag="" small_tag=""
+        if [[ -z "$custom_model" ]]; then
+            big_tag="$(_mcc_origin "$_MCC_BIG_MODEL_ENV")"
+            small_tag="$(_mcc_origin "$_MCC_SMALL_MODEL_ENV")"
+        fi
+        printf "Big Model : %s%s\n" "$big_model" "$big_tag"
+        printf "Sm Model  : %s%s\n" "$small_model" "$small_tag"
         printf "Effort    : %s\n" "${effort:-${_MCC_EFFORT_LEVELS[0]}}"
     fi
     $resume && printf "Mode      : resume\n"
