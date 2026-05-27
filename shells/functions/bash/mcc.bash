@@ -4,7 +4,8 @@
 #
 # 用法：
 #   mcc <provider> [key_suffix] [-r|--resume] [-m|--model <model>] [-e|--effort max|normal|min]
-#   mcc -l | --list
+#   mcc -l | --list                 显示供应商表
+#   mcc -h | --help                 显示完整帮助（含场景示例与注意事项）
 #
 # 新增供应商：在 _MCC_PROVIDERS 中添加一行即可，补全自动生效。
 
@@ -119,6 +120,7 @@ _mcc_list() {
 Usage:
   mcc <provider> [key_suffix] [-r|--resume] [-m|--model <model>] [-e|--effort max|normal|min]
   mcc -l|--list
+  mcc -h|--help
 
 Examples:
   mcc tr                              # 默认 key
@@ -139,6 +141,100 @@ Model env vars applied (when model is configured):
   ANTHROPIC_DEFAULT_HAIKU_MODEL  ← small_model
   CLAUDE_CODE_SUBAGENT_MODEL     ← small_model
   CLAUDE_CODE_EFFORT_LEVEL       ← max (default) | normal | min
+
+Run 'mcc -h' for full help with all scenarios and caveats.
+EOF
+}
+
+# 打印完整帮助（详细使用场景 + 注意事项）
+_mcc_help() {
+    cat <<'EOF'
+mcc - Claude Code 多供应商切换工具
+
+SYNOPSIS
+  mcc <provider> [key_suffix] [-r|--resume] [-m|--model <model>] [-e|--effort <level>]
+  mcc -l | --list                   显示供应商表
+  mcc -h | --help                   显示本帮助
+
+ARGUMENTS
+  <provider>                        供应商规范名或别名（运行 mcc -l 查看完整列表）
+  [key_suffix]                      可选，API key 后缀；将选用 <PREFIX>_API_KEY_<suffix>
+
+OPTIONS
+  -r, --resume                      恢复上次会话（向 claude 传 --resume）
+  -m, --model <model>               临时覆盖 big & small model（同时生效，仅本次）
+  -e, --effort <max|normal|min>     设置努力等级（默认 max）
+  -l, --list                        显示供应商表
+  -h, --help                        显示本帮助
+
+ENVIRONMENT VARIABLES
+  约定：<PREFIX> 为 *_API_KEY 中 _API_KEY 之前的部分（如 DEEPSEEK_API_KEY → DEEPSEEK）。
+
+  <PREFIX>_API_KEY                  必填，主 API key
+  <PREFIX>_API_KEY_<suffix>         可选，备用 key（通过 [key_suffix] 选择）
+  <PREFIX>_BASE_URL                 可选，覆盖配置的默认 URL
+  <PREFIX>_BIG_MODEL                可选，覆盖配置的默认 big model
+  <PREFIX>_SMALL_MODEL              可选，覆盖配置的默认 small model
+
+PRIORITY
+  模型:    -m  >  <PREFIX>_BIG/SMALL_MODEL  >  供应商配置默认值
+  URL:     <PREFIX>_BASE_URL                >  供应商配置默认值
+  API key: 由 [key_suffix] 选定具体的 KEY 变量
+
+SCENARIOS (参数顺序任意，可自由组合)
+
+  # 1) 基础调用（默认 key + 默认 URL + 默认模型）
+  mcc deepseek
+  mcc ds                            # 别名等价 mcc deepseek
+
+  # 2) 多账号切换：备用 key
+  mcc yr 5433                       # 用 ANYROUTER_API_KEY_5433
+  mcc deepseek work                 # 用 DEEPSEEK_API_KEY_work
+
+  # 3) 恢复上次会话
+  mcc ds -r
+  mcc ds --resume
+
+  # 4) 临时换模型（仅本次有效）
+  mcc ds -m deepseek-v4-pro[1m]     # big + small 都设为该值
+
+  # 5) 调整努力等级
+  mcc ds -e normal                  # max | normal | min（默认 max）
+  mcc ds -e min
+
+  # 6) 持久化覆盖模型（影响所有 mcc ds 调用）
+  export DEEPSEEK_BIG_MODEL=my-pro
+  export DEEPSEEK_SMALL_MODEL=my-flash
+  mcc ds
+
+  # 7) 透传代理启用模型（agentrouter / anyrouter 默认无模型配置）
+  export AGENTROUTER_BIG_MODEL=foo
+  mcc tr                            # big=foo，small 回退至 foo
+
+  # 8) 自定义 URL（自建代理或私有部署）
+  export DEEPSEEK_BASE_URL=https://my-proxy.example.com
+  mcc ds
+
+  # 9) 组合：suffix + resume + 临时模型 + 努力等级
+  mcc ds 5433 --resume -m custom-model -e min
+
+  # 10) 仅命令行覆盖一边：通过环境变量分别控制
+  export DEEPSEEK_BIG_MODEL=big-only
+  mcc ds                            # small 走配置默认值 deepseek-v4-flash
+
+NOTES
+  · -m 同时覆盖 big & small；若需分别控制请改用 <PREFIX>_BIG_MODEL / <PREFIX>_SMALL_MODEL
+  · 优先级是 CLI > 环境变量 > 配置默认；启动摘要中的 (from $VAR) 标记表示该值来自环境覆盖
+  · 透传代理（agentrouter / anyrouter）配置中无模型，需 -m 或 *_BIG_MODEL 才会导出模型变量
+  · big / small 任一为空时会复用另一个，避免导出空字符串到 claude
+  · CLAUDE_CODE_EFFORT_LEVEL 仅在最终有模型时才导出；纯透传代理场景下 -e 无效
+  · 每次 mcc 调用会先 unset 之前由 mcc 设置的所有变量（见代码 _MCC_MANAGED_VARS）
+  · claude 启动时固定附加 --dangerously-skip-permissions
+  · API key 在摘要中只显示前 8 位，其余以 **** 掩码，便于安全分享截屏
+  · 未识别的 provider 会报错；运行 mcc -l 查看可用列表
+
+SEE ALSO
+  mcc -l                            供应商表（含别名 / 默认 URL / 默认模型）
 EOF
 }
 
@@ -160,7 +256,7 @@ _mcc_completion() {
 
     local providers opts
     providers=$(printf '%s ' "${!_MCC_PROVIDERS[@]}" "${!_MCC_ALIASES[@]}")
-    opts="-l --list -r --resume -m --model -e --effort"
+    opts="-l --list -r --resume -m --model -e --effort -h --help"
 
     case ${COMP_CWORD} in
         1)
@@ -197,6 +293,10 @@ mcc() {
 
     if [[ "$1" == "-l" || "$1" == "--list" ]]; then
         _mcc_list; return 0
+    fi
+
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+        _mcc_help; return 0
     fi
 
     local provider="$1"; shift
