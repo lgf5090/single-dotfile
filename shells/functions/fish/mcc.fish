@@ -65,7 +65,6 @@ function _mcc_mask -a key
 end
 
 # 若指定的环境变量已被赋值，返回 "  (from $VAR)" 标记
-# fish 用 $$varname 实现 bash 的 ${!var} / zsh 的 ${(P)var} 间接展开
 function _mcc_origin -a varname
     test -n "$$varname"
     and printf '  (from $%s)' $varname
@@ -92,7 +91,7 @@ function _mcc_provider_exists -a name
     return 1
 end
 
-# 解析 provider 配置到全局 _MCC_* 变量（与 bash/zsh 版本同义）
+# 解析 provider 配置到全局 _MCC_* 变量
 function _mcc_parse_config -a name
     for entry in $_MCC_PROVIDERS
         set -l parts (string split "|" -- $entry)
@@ -102,7 +101,6 @@ function _mcc_parse_config -a name
             set -g _MCC_URL_ENV        $parts[4]
             set -g _MCC_BIG_MODEL      $parts[5]
             set -g _MCC_SMALL_MODEL    $parts[6]
-            # 模型环境变量名按约定派生：<PREFIX>_BIG_MODEL / <PREFIX>_SMALL_MODEL
             set -l prefix (string replace -r '_API_KEY$' '' -- $_MCC_KEY_ENV)
             set -g _MCC_BIG_MODEL_ENV   $prefix"_BIG_MODEL"
             set -g _MCC_SMALL_MODEL_ENV $prefix"_SMALL_MODEL"
@@ -116,11 +114,9 @@ end
 function _mcc_list
     echo "Providers:"
     echo "----------"
-    # 按规范名字典序排序后逐条渲染
     for entry in (printf '%s\n' $_MCC_PROVIDERS | sort)
         set -l parts (string split "|" -- $entry)
         set -l name $parts[1]
-        # 收集该规范名的所有别名
         set -l aliases
         for ae in $_MCC_ALIASES
             set -l ap (string split "|" -- $ae)
@@ -154,7 +150,6 @@ function _mcc_list
         printf "  %-20s %s%s%s\n" $display $url $from_env $model_info
     end
 
-    # 用法部分：双引号字符串，单引号在此为字面量、且没有 $ 需要转义
     echo "
 Usage:
   mcc <provider> [key_suffix] [-r|--resume] [-m|--model <model>] [-e|--effort max|normal|min]
@@ -184,8 +179,7 @@ Model env vars applied (when model is configured):
 Run 'mcc -h' for full help with all scenarios and caveats."
 end
 
-# 打印完整帮助（详细使用场景 + 注意事项）
-# 用单引号包裹整段文本：$ 字面量，且文本中无单引号
+# 打印完整帮助
 function _mcc_help
     echo 'mcc - Claude Code 多供应商切换工具
 
@@ -279,13 +273,12 @@ end
 # Fish 补全（动态读取 _MCC_PROVIDERS / _MCC_ALIASES）
 # ============================================================
 
-# 根据 commandline 当前光标位置返回合适的候选词列表
 function _mcc_complete_dynamic
     set -l tokens (commandline -opc)
-    # tokens[1] 是 "mcc"；统计已输入的位置参数数量（跳过选项及其值）
     set -l positional 0
     set -l first_pos
     set -l skip_next 0
+
     for i in (seq 2 (count $tokens))
         if test $skip_next -eq 1
             set skip_next 0
@@ -295,7 +288,7 @@ function _mcc_complete_dynamic
             case -m --model -e --effort
                 set skip_next 1
             case '-*'
-                # 其他短/长选项，不消耗下一个 token
+                # 其他选项，不增加位置参数计数
             case '*'
                 set positional (math $positional + 1)
                 test $positional -eq 1; and set first_pos $tokens[$i]
@@ -303,34 +296,42 @@ function _mcc_complete_dynamic
     end
 
     if test $positional -eq 0
-        # 还没输入 provider：列出规范名 + 别名
+        # 候选：provider 规范名 + 别名
         for entry in $_MCC_PROVIDERS
-            echo (string split -m 1 "|" -- $entry)[1]
+            printf '%s\n' (string split -m 1 "|" -- $entry)[1]
         end
         for entry in $_MCC_ALIASES
-            echo (string split -m 1 "|" -- $entry)[1]
+            printf '%s\n' (string split -m 1 "|" -- $entry)[1]
         end
     else if test $positional -eq 1
-        # 已有 provider，准备输入 key_suffix：从已设置的环境变量推导
+        # 候选：该 provider 对应的 key_suffix（从环境变量中提取）
         set -l prov (_mcc_resolve_alias $first_pos)
         if _mcc_provider_exists $prov
             _mcc_parse_config $prov
-            for var in (set --names)
-                if string match -q $_MCC_KEY_ENV"_*" -- $var
-                    string replace -r "^"$_MCC_KEY_ENV"_" '' -- $var
+            if set -q _MCC_KEY_ENV
+                for var in (set --names)
+                    if string match -q $_MCC_KEY_ENV"_*" -- $var
+                        # 去除前缀，保留后缀（纯文本替换，避免正则元字符问题）
+                        string replace "$_MCC_KEY_ENV"_ "" -- $var
+                    end
                 end
             end
         end
     end
+    # 其他情况不提供补全，让 fish 使用静态选项补全或留空
 end
 
-# 选项静态补全
+# 清除已有的 mcc 补全，确保全新安装
+complete -e mcc 2>/dev/null
+
+# 静态选项补全
 complete -c mcc -s r -l resume -d 'Resume last session'
 complete -c mcc -s m -l model  -x -d 'Override big & small model'
 complete -c mcc -s e -l effort -xa 'max normal min' -d 'Effort level'
 complete -c mcc -s l -l list   -d 'Show provider list'
 complete -c mcc -s h -l help   -d 'Show full help'
-# 动态补全（providers 在第一位、suffixes 在第二位）
+
+# 动态位置参数补全（provider、key_suffix）
 complete -c mcc -f -a '(_mcc_complete_dynamic)'
 
 # ============================================================
@@ -366,7 +367,6 @@ function mcc
     set -l key_suffix ""
     test (count $argv) -eq 2; and set key_suffix $argv[2]
 
-    # 规范化别名
     set provider (_mcc_resolve_alias $provider)
 
     if not _mcc_provider_exists $provider
@@ -377,7 +377,6 @@ function mcc
 
     _mcc_parse_config $provider
 
-    # 校验 effort 值
     if set -q _flag_effort
         if not contains -- $_flag_effort $_MCC_EFFORT_LEVELS
             _mcc_err "--effort must be one of: $_MCC_EFFORT_LEVELS"
@@ -385,7 +384,6 @@ function mcc
         end
     end
 
-    # 确定 API key
     set -l key_var $_MCC_KEY_ENV
     test -n "$key_suffix"; and set key_var $key_var"_"$key_suffix
     if test -z "$$key_var"
@@ -394,11 +392,9 @@ function mcc
         return 1
     end
 
-    # 确定 base URL（环境变量优先）
     set -l base_url $_MCC_DEFAULT_URL
     test -n "$$_MCC_URL_ENV"; and set base_url $$_MCC_URL_ENV
 
-    # 确定模型（优先级：--model > 环境变量 > 配置默认；任一为空则复用另一个）
     set -l big_model
     set -l small_model
     if set -q _flag_model
@@ -413,7 +409,6 @@ function mcc
         test -z "$small_model"; and set small_model $big_model
     end
 
-    # 打印启动摘要（key 掩码）
     printf "Provider  : %s\n"   $provider
     printf "Base URL  : %s%s\n" $base_url (_mcc_origin $_MCC_URL_ENV)
     printf "API Key   : %s  (%s)\n" (_mcc_mask $$key_var) $key_var
@@ -435,7 +430,6 @@ function mcc
     set -q _flag_resume; and printf "Mode      : resume\n"
     echo
 
-    # 清理上次会话留下的相关环境变量（变量列表见 _MCC_MANAGED_VARS）
     set -e $_MCC_MANAGED_VARS
 
     set -gx ANTHROPIC_BASE_URL   $base_url
@@ -456,7 +450,6 @@ function mcc
         set -gx CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 1
     end
 
-    # 启动（列表展开传参，避免 eval）
     set -l cmd claude --dangerously-skip-permissions
     set -q _flag_resume; and set cmd $cmd --resume
     $cmd
