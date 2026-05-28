@@ -110,6 +110,30 @@ function _mcc_parse_config -a name
     return 1
 end
 
+# 解析运行时的 URL / big_model / small_model
+# 前置：调用方必须先调用 _mcc_parse_config 以填充 _MCC_* 全局
+# 规则：
+#   url   ← $$_MCC_URL_ENV ≫ $_MCC_DEFAULT_URL
+#   big   ← $$_MCC_BIG_MODEL_ENV ≫ $_MCC_BIG_MODEL
+#   small ← $$_MCC_SMALL_MODEL_ENV ≫ $_MCC_SMALL_MODEL
+#   big / small 互补：任一为空时复用另一个（仅当至少一个非空时触发）
+# 输出："url|big|small"，调用方用 `string split -m 2 "|"` 解码
+function _mcc_resolve_runtime
+    set -l url $_MCC_DEFAULT_URL
+    test -n "$$_MCC_URL_ENV"; and set url $$_MCC_URL_ENV
+
+    set -l big $_MCC_BIG_MODEL
+    set -l small $_MCC_SMALL_MODEL
+    test -n "$$_MCC_BIG_MODEL_ENV";   and set big   $$_MCC_BIG_MODEL_ENV
+    test -n "$$_MCC_SMALL_MODEL_ENV"; and set small $$_MCC_SMALL_MODEL_ENV
+    if test -n "$big" -o -n "$small"
+        test -z "$big";   and set big   $small
+        test -z "$small"; and set small $big
+    end
+
+    printf '%s|%s|%s' $url $big $small
+end
+
 # 打印供应商列表及用法说明
 function _mcc_list
     echo "Providers:"
@@ -128,19 +152,14 @@ function _mcc_list
 
         _mcc_parse_config $name
 
-        set -l url $_MCC_DEFAULT_URL
-        test -n "$$_MCC_URL_ENV"; and set url $$_MCC_URL_ENV
+        set -l rt (_mcc_resolve_runtime | string split -m 2 "|")
+        set -l url $rt[1]
+        set -l cfg_big $rt[2]
+        set -l cfg_small $rt[3]
         set -l from_env (_mcc_origin $_MCC_URL_ENV)
 
-        set -l cfg_big $_MCC_BIG_MODEL
-        set -l cfg_small $_MCC_SMALL_MODEL
-        test -n "$$_MCC_BIG_MODEL_ENV";   and set cfg_big   $$_MCC_BIG_MODEL_ENV
-        test -n "$$_MCC_SMALL_MODEL_ENV"; and set cfg_small $$_MCC_SMALL_MODEL_ENV
-
         set -l model_info ""
-        if test -n "$cfg_big" -o -n "$cfg_small"
-            test -z "$cfg_big";   and set cfg_big   $cfg_small
-            test -z "$cfg_small"; and set cfg_small $cfg_big
+        if test -n "$cfg_big"
             set model_info "  big="$cfg_big(_mcc_origin $_MCC_BIG_MODEL_ENV)
             if test "$cfg_small" != "$cfg_big" -o -n "$$_MCC_SMALL_MODEL_ENV"
                 set model_info $model_info" / small="$cfg_small(_mcc_origin $_MCC_SMALL_MODEL_ENV)
@@ -392,21 +411,13 @@ function mcc
         return 1
     end
 
-    set -l base_url $_MCC_DEFAULT_URL
-    test -n "$$_MCC_URL_ENV"; and set base_url $$_MCC_URL_ENV
-
-    set -l big_model
-    set -l small_model
+    set -l rt (_mcc_resolve_runtime | string split -m 2 "|")
+    set -l base_url $rt[1]
+    set -l big_model $rt[2]
+    set -l small_model $rt[3]
     if set -q _flag_model
         set big_model   $_flag_model
         set small_model $_flag_model
-    else
-        set big_model   $_MCC_BIG_MODEL
-        set small_model $_MCC_SMALL_MODEL
-        test -n "$$_MCC_BIG_MODEL_ENV";   and set big_model   $$_MCC_BIG_MODEL_ENV
-        test -n "$$_MCC_SMALL_MODEL_ENV"; and set small_model $$_MCC_SMALL_MODEL_ENV
-        test -z "$big_model";   and set big_model   $small_model
-        test -z "$small_model"; and set small_model $big_model
     end
 
     printf "Provider  : %s\n"   $provider
