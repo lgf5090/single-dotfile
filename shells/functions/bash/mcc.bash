@@ -240,44 +240,70 @@ EOF
 
 # ============================================================
 # Bash 补全（动态读取 _MCC_PROVIDERS，无需手动同步）
+#
+# 设计要点：
+#   1) 选项与位置参数候选分离：$cur 以 `-` 开头 -> 只补选项；
+#      否则只补 provider / key_suffix，不混进选项。这样 `mcc <TAB>`
+#      不会显示一堆 `-l --list -r ...` 干扰视线。
+#   2) 用"已完成的位置参数计数"判断当前补什么 -> `mcc -r ds <TAB>`、
+#      `mcc -e normal ds <TAB>` 等"选项穿插在位置参数中"的场景都能
+#      正确识别 `ds` 是第 1 个位置参数，光标处补 key_suffix。
+#   3) 短选项 -m/-e 紧跟值，扫描时要 skip_next 跳过那个值。
 # ============================================================
 _mcc_completion() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    # --model 后由用户自行输入
-    [[ "$prev" == "-m" || "$prev" == "--model" ]] && return 0
+    # 1) 光标前一个 token 是带值选项：给该选项的候选
+    case "$prev" in
+        -m|--model) return 0 ;;
+        -e|--effort)
+            COMPREPLY=( $(compgen -W "${_MCC_EFFORT_LEVELS[*]}" -- "$cur") )
+            return 0
+            ;;
+    esac
 
-    # --effort 补全固定值
-    if [[ "$prev" == "-e" || "$prev" == "--effort" ]]; then
-        COMPREPLY=( $(compgen -W "${_MCC_EFFORT_LEVELS[*]}" -- "$cur") )
+    # 2) 用户正在输入选项（- 开头）：只补选项
+    if [[ "$cur" == -* ]]; then
+        local opts="-l --list -r --resume -m --model -e --effort -h --help"
+        COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
         return 0
     fi
 
-    local providers opts
-    providers=$(printf '%s ' "${!_MCC_PROVIDERS[@]}" "${!_MCC_ALIASES[@]}")
-    opts="-l --list -r --resume -m --model -e --effort -h --help"
+    # 3) 扫描 COMP_WORDS[1..COMP_CWORD-1]，跳过选项及其值，统计已完成的位置参数
+    local pos_count=0 skip_next=0 first_pos="" i
+    for (( i=1; i < COMP_CWORD; i++ )); do
+        if (( skip_next )); then
+            skip_next=0
+            continue
+        fi
+        case "${COMP_WORDS[i]}" in
+            -m|--model|-e|--effort) skip_next=1 ;;
+            -*) ;;  # 其他选项（-r/-l/-h/--resume 等）忽略
+            *)
+                (( pos_count++ ))
+                (( pos_count == 1 )) && first_pos="${COMP_WORDS[i]}"
+                ;;
+        esac
+    done
 
-    case ${COMP_CWORD} in
-        1)
-            COMPREPLY=( $(compgen -W "$providers $opts" -- "$cur") )
-            ;;
-        2)
-            local p="${COMP_WORDS[1]}"
-            p="${_MCC_ALIASES[$p]:-$p}"
-            if [[ -v _MCC_PROVIDERS[$p] ]]; then
-                _mcc_parse_config "$p"
-                local suffixes="" var
-                while IFS= read -r var; do
-                    [[ "$var" =~ ^${_MCC_KEY_ENV}_(.+)$ ]] && suffixes+="${BASH_REMATCH[1]} "
-                done < <(compgen -v "${_MCC_KEY_ENV}_")
-                COMPREPLY=( $(compgen -W "$suffixes $opts" -- "$cur") )
-            fi
-            ;;
-        *)
-            COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
-            ;;
-    esac
+    if (( pos_count == 0 )); then
+        # 当前光标是第 1 个位置参数：provider 名 + 别名
+        local providers
+        providers="${!_MCC_PROVIDERS[*]} ${!_MCC_ALIASES[*]}"
+        COMPREPLY=( $(compgen -W "$providers" -- "$cur") )
+    elif (( pos_count == 1 )); then
+        # 当前光标是第 2 个位置参数：key_suffix（基于已设置的 env vars）
+        local p="${_MCC_ALIASES[$first_pos]:-$first_pos}"
+        if [[ -v _MCC_PROVIDERS[$p] ]]; then
+            _mcc_parse_config "$p"
+            local suffixes="" var
+            while IFS= read -r var; do
+                [[ "$var" =~ ^${_MCC_KEY_ENV}_(.+)$ ]] && suffixes+="${BASH_REMATCH[1]} "
+            done < <(compgen -v "${_MCC_KEY_ENV}_")
+            COMPREPLY=( $(compgen -W "$suffixes" -- "$cur") )
+        fi
+    fi
 }
 
 complete -F _mcc_completion mcc
