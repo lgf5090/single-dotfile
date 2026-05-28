@@ -622,6 +622,18 @@ function weather --description 'Weather report via wttr.in'
     curl -fsS "https://wttr.in/$argv[1]"
 end
 
+function uuid --description 'Generate a random UUID v4'
+    set h (od -A n -N 16 -t x1 /dev/urandom | tr -d ' \n')
+    set n (printf '%d' 0x(string sub -s 17 -l 1 $h))
+    set v (printf '%x' (math "bitor(bitand($n, 3), 8)"))
+    printf '%s-%s-4%s-%s%s-%s\n' \
+        (string sub -s 1  -l 8  $h) \
+        (string sub -s 9  -l 4  $h) \
+        (string sub -s 14 -l 3  $h) \
+        $v \
+        (string sub -s 18 -l 3  $h) \
+        (string sub -s 21 -l 12 $h)
+end
 
 # =============================================================================
 # SECTION 10 — Interactive prompt (fish_prompt)

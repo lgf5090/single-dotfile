@@ -577,6 +577,9 @@ def weather [location?: string] {
     http get $"https://wttr.in/($location | default '')"
 }
 
+def uuid [] {
+    random uuid
+}
 
 # =============================================================================
 # SECTION 10 — ~/.aliases regenerator

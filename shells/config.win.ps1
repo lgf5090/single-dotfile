@@ -642,6 +642,9 @@ function global:weather
     Invoke-RestMethod -Uri "https://wttr.in/$($args[0])"
 }
 
+function global:uuid {
+    (New-Guid).Guid
+}
 
 # =============================================================================
 # SECTION 10 — Interactive prompt (function:prompt)

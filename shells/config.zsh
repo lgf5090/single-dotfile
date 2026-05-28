@@ -623,6 +623,14 @@ weather() {
     curl -fsS "https://wttr.in/${1:-}"
 }
 
+uuid() {
+    local h v
+    h=$(od -A n -N 16 -t x1 /dev/urandom | tr -d ' \n')
+    v=$(( 16#${h[17]} & 3 | 8 ))
+    printf '%s-%s-4%s-%x%s-%s\n' \
+        "${h[1,8]}" "${h[9,12]}" "${h[14,16]}" \
+        "$v"        "${h[18,20]}" "${h[21,32]}"
+}
 
 # =============================================================================
 # SECTION 10 — Interactive prompt (PROMPT + precmd hook)

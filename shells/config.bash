@@ -575,6 +575,14 @@ weather() {
     curl -fsS "https://wttr.in/${1:-}"
 }
 
+uuid() {
+    local h v
+    h=$(od -A n -N 16 -t x1 /dev/urandom | tr -d ' \n')
+    printf -v v '%x' $(( (16#${h:16:1} & 3) | 8 ))
+    printf '%s-%s-4%s-%s%s-%s\n' \
+        "${h:0:8}" "${h:8:4}" "${h:13:3}" \
+        "$v"       "${h:17:3}" "${h:20:12}"
+}
 
 # =============================================================================
 # SECTION 10 — Interactive prompt (PS1)
