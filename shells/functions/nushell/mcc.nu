@@ -109,6 +109,29 @@ def _mcc_get_config [name: string] {
     }
 }
 
+# 计算运行时的 URL / big_model / small_model
+# 输入：来自 _mcc_get_config 的配置记录
+# 规则：
+#   url   ← $env.<base_url_env>   ≫ $cfg.default_url
+#   big   ← $env.<big_model_env>  ≫ $cfg.big_model
+#   small ← $env.<small_model_env> ≫ $cfg.small_model
+#   big / small 互补：任一为空时复用另一个（两个都空则保持空，透传代理场景）
+# 返回：{ url, big_model, small_model } 记录
+def _mcc_resolve_runtime [cfg: record] {
+    let env_url = ($env | get -o $cfg.base_url_env | default "")
+    let env_big = ($env | get -o $cfg.big_model_env | default "")
+    let env_small = ($env | get -o $cfg.small_model_env | default "")
+
+    let url = if ($env_url | is-not-empty) { $env_url } else { $cfg.default_url }
+    let raw_big = if ($env_big | is-not-empty) { $env_big } else { $cfg.big_model }
+    let raw_small = if ($env_small | is-not-empty) { $env_small } else { $cfg.small_model }
+
+    let big = if ($raw_big | is-empty) { $raw_small } else { $raw_big }
+    let small = if ($raw_small | is-empty) { $big } else { $raw_small }
+
+    { url: $url, big_model: $big, small_model: $small }
+}
+
 # 打印供应商列表及用法说明
 def _mcc_list [] {
     print "Providers:"
@@ -122,23 +145,15 @@ def _mcc_list [] {
         }
 
         let cfg = (_mcc_get_config $p.name)
-
-        let env_url = ($env | get -o $cfg.base_url_env | default "")
-        let url = if ($env_url | is-not-empty) { $env_url } else { $cfg.default_url }
+        let rt = (_mcc_resolve_runtime $cfg)
         let from_env = (_mcc_origin $cfg.base_url_env)
 
-        let env_big = ($env | get -o $cfg.big_model_env | default "")
-        let env_small = ($env | get -o $cfg.small_model_env | default "")
-        let raw_big = if ($env_big | is-not-empty) { $env_big } else { $cfg.big_model }
-        let raw_small = if ($env_small | is-not-empty) { $env_small } else { $cfg.small_model }
-
         let model_info = (
-            if ($raw_big | is-not-empty) or ($raw_small | is-not-empty) {
-                let big = if ($raw_big | is-empty) { $raw_small } else { $raw_big }
-                let small = if ($raw_small | is-empty) { $big } else { $raw_small }
-                let head = "  big=" + $big + (_mcc_origin $cfg.big_model_env)
-                if $small != $big or ($env_small | is-not-empty) {
-                    $head + " / small=" + $small + (_mcc_origin $cfg.small_model_env)
+            if ($rt.big_model | is-not-empty) {
+                let head = "  big=" + $rt.big_model + (_mcc_origin $cfg.big_model_env)
+                let env_small_set = (($env | get -o $cfg.small_model_env | default "") | is-not-empty)
+                if $rt.small_model != $rt.big_model or $env_small_set {
+                    $head + " / small=" + $rt.small_model + (_mcc_origin $cfg.small_model_env)
                 } else {
                     $head
                 }
@@ -147,7 +162,7 @@ def _mcc_list [] {
             }
         )
 
-        print ("  " + ($display | fill -a l -w 20) + " " + $url + $from_env + $model_info)
+        print ("  " + ($display | fill -a l -w 20) + " " + $rt.url + $from_env + $model_info)
     }
 
     print ""
@@ -368,26 +383,11 @@ def --env mcc [
         return
     }
 
-    # 确定 base URL
-    let env_url = ($env | get -o $cfg.base_url_env | default "")
-    let base_url = if ($env_url | is-not-empty) { $env_url } else { $cfg.default_url }
-
-    # 确定模型（CLI -m > <PREFIX>_BIG/SMALL_MODEL > 配置默认）
-    let env_big = ($env | get -o $cfg.big_model_env | default "")
-    let env_small = ($env | get -o $cfg.small_model_env | default "")
-    let big_model = if ($model | is-not-empty) {
-        $model
-    } else {
-        let raw_big = if ($env_big | is-not-empty) { $env_big } else { $cfg.big_model }
-        let raw_small = if ($env_small | is-not-empty) { $env_small } else { $cfg.small_model }
-        if ($raw_big | is-empty) { $raw_small } else { $raw_big }
-    }
-    let small_model = if ($model | is-not-empty) {
-        $model
-    } else {
-        let raw_small = if ($env_small | is-not-empty) { $env_small } else { $cfg.small_model }
-        if ($raw_small | is-empty) { $big_model } else { $raw_small }
-    }
+    # 确定 URL / 模型（CLI -m > <PREFIX>_BIG/SMALL_MODEL > 配置默认）
+    let rt = (_mcc_resolve_runtime $cfg)
+    let base_url = $rt.url
+    let big_model = if ($model | is-not-empty) { $model } else { $rt.big_model }
+    let small_model = if ($model | is-not-empty) { $model } else { $rt.small_model }
 
     # 启动摘要
     print $"Provider  : ($canon)"
