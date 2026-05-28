@@ -429,6 +429,21 @@ for __shells_brew in \
 end
 set -e __shells_brew
 
+# ---- mise (auto-detect install path; activates shims/PATH/env management) ----
+for __shells_mise in \
+    $HOME/.local/bin/mise \
+    /usr/local/bin/mise \
+    /opt/mise/bin/mise
+    if test -x $__shells_mise
+        $__shells_mise activate fish | source
+        break
+    end
+end
+set -e __shells_mise
+set -gx PATH "$HOME/.local/share/mise/shims" $PATH
+
+
+
 functions -e __shells_prepend_dir __shells_append_dir
 
 

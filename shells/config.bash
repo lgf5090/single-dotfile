@@ -413,6 +413,22 @@ do
 done
 unset __shells_brew
 
+# ---- mise (auto-detect install path; activates shims/PATH/env management) ----
+for __shells_mise in \
+    "$HOME/.local/bin/mise" \
+    /usr/local/bin/mise \
+    /opt/mise/bin/mise
+do
+    if [ -x "$__shells_mise" ]; then
+        eval "$("$__shells_mise" activate bash)"
+        break
+    fi
+done
+unset __shells_mise
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+
+
+
 export PATH
 unset -f __shells_prepend_dir __shells_append_dir
 

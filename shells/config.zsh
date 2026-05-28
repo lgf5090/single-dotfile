@@ -459,6 +459,24 @@ esac
     done
 }
 
+# ---- mise (auto-detect install path; activates shims/PATH/env management) ----
+# `mise activate zsh` emits zsh-syntax hooks; eval'd directly.
+() {
+    local mise
+    for mise in $HOME/.local/bin/mise \
+                /usr/local/bin/mise \
+                /opt/mise/bin/mise; do
+        if [[ -x $mise ]]; then
+            eval "$($mise activate zsh)"
+            return
+        fi
+    done
+}
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+
+
+
+
 unset -f __shells_prepend_dir __shells_append_dir
 
 
