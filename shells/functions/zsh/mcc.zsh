@@ -243,55 +243,84 @@ EOF
 
 # ============================================================
 # Zsh 补全（动态读取 _MCC_PROVIDERS / _MCC_ALIASES）
+#
+# 设计要点：
+#   1) 用"已完成的位置参数计数"而非 $CURRENT 决定补什么 —— 这样
+#      `mcc -r ds <TAB>`、`mcc -e normal ds <TAB>` 等"选项穿插在位置
+#      参数中"的场景都能正确识别 `ds` 是第 1 个位置参数。
+#   2) 短选项 -m/-e 紧跟值，扫描时要 skip_next 跳过那个值，避免它
+#      被误算成位置参数。
+#   3) cw_prev 优先：如果光标前的 token 是 -e/--effort，直接给 effort
+#      候选；-m/--model 后是模型名（用户自由输入），不给候选。
 # ============================================================
 _mcc_completion() {
     emulate -L zsh
-    local -a providers opts
-    local cw_prev p var
+    setopt local_options no_aliases
 
-    providers=("${(@k)_MCC_PROVIDERS}" "${(@k)_MCC_ALIASES}")
-    opts=(-l --list -h --help -r --resume -m --model -e --effort)
+    local cw_prev="${words[CURRENT-1]}"
 
-    cw_prev="${words[CURRENT-1]}"
+    # 光标前一个 token 是带值选项：给该选项的候选
     case "$cw_prev" in
-        -m|--model) return 0 ;;  # 模型由用户自由输入
+        -m|--model) return 0 ;;
         -e|--effort)
             _values 'effort level' "${_MCC_EFFORT_LEVELS[@]}"
             return 0
             ;;
     esac
 
-    case "$CURRENT" in
-        2)
-            # 第一个参数：provider 名或选项
-            _describe -t providers 'provider' providers
-            _describe -t options 'option' opts
-            ;;
-        3)
-            # 第二个参数：key_suffix（基于已设置的 env vars）或选项
-            p="${words[2]}"
-            p="${_MCC_ALIASES[$p]:-$p}"
-            if (( ${+_MCC_PROVIDERS[$p]} )); then
-                _mcc_parse_config "$p"
-                local -a suffixes
-                # zsh 内置 $parameters 关联数组保存了所有已定义变量名；按前缀过滤即可，
-                # 不需要 bash 的 compgen -v
-                for var in ${(k)parameters}; do
-                    [[ "$var" == "${_MCC_KEY_ENV}_"* ]] && \
-                        suffixes+=("${var#${_MCC_KEY_ENV}_}")
-                done
-                (( ${#suffixes} )) && _describe -t suffixes 'key suffix' suffixes
-            fi
-            _describe -t options 'option' opts
-            ;;
-        *)
-            _describe -t options 'option' opts
-            ;;
-    esac
+    # 扫描 words[2..CURRENT-1]，跳过选项及其值，统计已完成的位置参数
+    local -i pos_count=0 skip_next=0 i
+    local first_pos=""
+    for (( i=2; i < CURRENT; i++ )); do
+        if (( skip_next )); then
+            skip_next=0
+            continue
+        fi
+        case "${words[i]}" in
+            -m|--model|-e|--effort) skip_next=1 ;;
+            -*) ;;  # 其他选项（-r/-l/-h/--resume 等）忽略
+            *)
+                (( pos_count++ ))
+                (( pos_count == 1 )) && first_pos="${words[i]}"
+                ;;
+        esac
+    done
+
+    local -a providers opts suffixes
+    opts=(-l --list -h --help -r --resume -m --model -e --effort)
+
+    if (( pos_count == 0 )); then
+        # 当前光标是第 1 个位置参数：provider 名 + 别名
+        providers=("${(@k)_MCC_PROVIDERS}" "${(@k)_MCC_ALIASES}")
+        _describe -t providers 'provider' providers
+    elif (( pos_count == 1 )); then
+        # 当前光标是第 2 个位置参数：key_suffix（基于已设置的 env vars）
+        local p="${_MCC_ALIASES[$first_pos]:-$first_pos}"
+        if (( ${+_MCC_PROVIDERS[$p]} )); then
+            _mcc_parse_config "$p"
+            local var
+            # zsh 内置 $parameters 关联数组保存了所有已定义变量名；按前缀过滤即可，
+            # 不需要 bash 的 compgen -v
+            for var in ${(k)parameters}; do
+                [[ "$var" == "${_MCC_KEY_ENV}_"* ]] && \
+                    suffixes+=("${var#${_MCC_KEY_ENV}_}")
+            done
+            (( ${#suffixes} )) && _describe -t suffixes 'key suffix' suffixes
+        fi
+    fi
+
+    # 无论位置如何，始终提供选项候选
+    _describe -t options 'option' opts
 }
 
-# 仅在 compdef 可用时注册（用户已 autoload compinit 的场景）
-(( ${+functions[compdef]} )) && compdef _mcc_completion mcc
+# 注册补全。两种加载顺序都要支持：
+#   a) 用户 zshrc 在 compinit 之后 source 本文件 —— compdef 是函数，直接注册。
+#   b) 用户 zshrc 在 compinit 之前 source 本文件 —— 自动 autoload + compinit，
+#      避免 `(( ${+functions[compdef]} ))` 那种"静默跳过"导致补全失效。
+if (( ! ${+functions[compdef]} )); then
+    autoload -Uz compinit && compinit -u 2>/dev/null
+fi
+compdef _mcc_completion mcc 2>/dev/null
 
 # ============================================================
 # 主函数
