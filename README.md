@@ -1,6 +1,10 @@
 
-Resume this session with:
-claude --resume d2b56b9f-bd03-4f2e-92b1-3646428862f6
+# RIME输入法
+https://github.com/gaboolic/rime-frost
+https://www.mintimate.cc/zh/guide/deviceSync.html
+https://github.com/rime/home/wiki/RimeWithIBus
+https://rime.im/download/#linux
+
 
 
 # 字体安装脚本
