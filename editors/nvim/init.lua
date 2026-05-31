@@ -7,7 +7,7 @@
 -- ─── 1. Plugin Management (vim.pack) ─────────────────────────────────────────
 vim.pack.add({
     -- Syntax highlighting (pinned to v0.x for stable API)
-    { src = "https://github.com/nvim-treesitter/nvim-treesitter",         version = "v0.*" },
+    { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
 
     -- LSP (provides server defaults: cmd, filetypes, etc.)
     { src = "https://github.com/neovim/nvim-lspconfig" },
