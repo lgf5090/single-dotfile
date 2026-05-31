@@ -91,11 +91,11 @@ config.use_fancy_tab_bar            = true
 config.tab_bar_at_bottom            = false
 config.hide_tab_bar_if_only_one_tab = false
 
-wezterm.on('format-tab-title', function(tab)
-    local proc = tab.active_pane.foreground_process_name or 'shell'
-    local name = proc:match('([^/\\]+)$') or proc
-    return { { Text = string.format(' %d: %s ', tab.tab_index + 1, name) } }
-end)
+-- wezterm.on('format-tab-title', function(tab)
+--     local proc = tab.active_pane.foreground_process_name or 'shell'
+--     local name = proc:match('([^/\\]+)$') or proc
+--     return { { Text = string.format(' %d: %s ', tab.tab_index + 1, name) } }
+-- end)
 
 -- ============================================================
 -- 忽略关闭确认的进程
