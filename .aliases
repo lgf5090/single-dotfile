@@ -32,6 +32,10 @@ hist=history
 # usually apps
 ff=fastfetch
 
+nv=nvim
+nvl=NVIM_APPNAME=nvim-lite nvim
+nvd=NVIM_APPNAME=nvim-dev nvim
+
 els=eza --color=always --icons=always --reverse --sort=size
 elsd=eza --color=always --icons=always --reverse --sort=size --only-dirs
 ell=eza -lh --color=always --icons=always --group-directories-first --reverse --sort=size
