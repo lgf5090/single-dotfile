@@ -1,0 +1,114 @@
+// ~/.config/zellij/config.kdl
+// Zellij 配置：Dracula 主题 + 实用快捷键
+
+// --- 基础设置 ---
+scroll_buffer_size 10000       // 回滚行数
+mouse_mode true                // 开启鼠标支持
+pane_frames true               // 显示面板边框
+
+// 复制到系统剪贴板（根据需要取消注释）
+// copy_command "xclip -selection clipboard"   // X11
+// copy_command "wl-copy"                      // Wayland
+// copy_command "pbcopy"                       // macOS
+
+// --- Dracula 主题 ---
+themes {
+    dracula {
+        // 终端标准色
+        fg "#f8f8f2"
+        bg "#282a36"
+        black "#21222c"
+        red "#ff5555"
+        green "#50fa7b"
+        yellow "#f1fa8c"
+        blue "#bd93f9"
+        magenta "#ff79c6"
+        cyan "#8be9fd"
+        white "#f8f8f2"
+        orange "#ffb86c"
+
+        // 亮色变体
+        light_black "#6272a4"
+        light_red "#ff6e6e"
+        light_green "#69ff94"
+        light_yellow "#ffffa5"
+        light_blue "#d6acff"
+        light_magenta "#ff92df"
+        light_cyan "#a4ffff"
+        light_white "#ffffff"
+
+        // 面板边框
+        pane_frames {
+            fg "#6272a4"
+            bg "#282a36"
+        }
+        active_pane_frames {
+            fg "#bd93f9"
+            bg "#282a36"
+        }
+
+        // 标签页
+        tabs {
+            active_bg "#bd93f9"
+            active_fg "#282a36"
+            inactive_bg "#44475a"
+            inactive_fg "#f8f8f2"
+        }
+
+        // 状态栏
+        status_bar {
+            fg "#f8f8f2"
+            bg "#44475a"
+        }
+
+        selected_text_bg "#44475a"
+        cursor "#f8f8f2"
+    }
+}
+
+// 启用 Dracula 主题
+theme "dracula"
+
+// --- 快捷键（保留 Zellij 默认绑定，额外添加实用组合）---
+keybinds {
+    normal {
+        // 焦点移动：Alt + h/j/k/l 或方向键
+        bind "Alt h" { MoveFocusOrTab "Left"; }
+        bind "Alt j" { MoveFocusOrTab "Down"; }
+        bind "Alt k" { MoveFocusOrTab "Up"; }
+        bind "Alt l" { MoveFocusOrTab "Right"; }
+        bind "Alt Left" { MoveFocusOrTab "Left"; }
+        bind "Alt Down" { MoveFocusOrTab "Down"; }
+        bind "Alt Up" { MoveFocusOrTab "Up"; }
+        bind "Alt Right" { MoveFocusOrTab "Right"; }
+
+        // 调整面板大小：Alt + Shift + 方向键
+        bind "Alt Shift h" { Resize "Left"; }
+        bind "Alt Shift j" { Resize "Down"; }
+        bind "Alt Shift k" { Resize "Up"; }
+        bind "Alt Shift l" { Resize "Right"; }
+        bind "Alt Shift Left" { Resize "Left"; }
+        bind "Alt Shift Down" { Resize "Down"; }
+        bind "Alt Shift Up" { Resize "Up"; }
+        bind "Alt Shift Right" { Resize "Right"; }
+
+        // 快速创建面板
+        bind "Alt n" { NewPane; }           // 自动选择方向
+        bind "Alt d" { NewPane "Down"; }    // 下方新建
+        bind "Alt r" { NewPane "Right"; }   // 右方新建
+
+        // 关闭当前面板
+        bind "Alt w" { ClosePane; }
+
+        // 标签页切换：Alt + 数字键
+        bind "Alt 1" { GoToTab 1; }
+        bind "Alt 2" { GoToTab 2; }
+        bind "Alt 3" { GoToTab 3; }
+        bind "Alt 4" { GoToTab 4; }
+        bind "Alt 5" { GoToTab 5; }
+        bind "Alt 6" { GoToTab 6; }
+        bind "Alt 7" { GoToTab 7; }
+        bind "Alt 8" { GoToTab 8; }
+        bind "Alt 9" { GoToTab 9; }
+    }
+}
