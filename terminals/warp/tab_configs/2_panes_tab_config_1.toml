@@ -1,0 +1,32 @@
+name = "2 panes tab config 1"
+
+[[panes]]
+id = "p1"
+split = "horizontal"
+children = [
+    "p2",
+    "p4",
+]
+
+[[panes]]
+id = "p2"
+split = "vertical"
+children = ["p3"]
+
+[[panes]]
+id = "p3"
+type = "terminal"
+is_focused = true
+directory = "~"
+
+[[panes]]
+id = "p4"
+split = "vertical"
+children = ["p5"]
+
+[[panes]]
+id = "p5"
+type = "terminal"
+directory = "~/Downloads"
+
+[params]
