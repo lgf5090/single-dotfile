@@ -1,0 +1,226 @@
+# ═══════════════════════════════════════════════
+#  Helix 语言配置  ~/.config/helix/languages.toml
+# ═══════════════════════════════════════════════
+
+# ─── Rust ────────────────────────────────────────
+[language-server.rust-analyzer]
+command = "rust-analyzer"
+
+[language-server.rust-analyzer.config]
+check.command                                    = "clippy"
+inlayHints.parameterHints.enable                 = true
+inlayHints.typeHints.enable                      = true
+inlayHints.closureReturnTypeHints.enable         = "with_block"
+inlayHints.lifetimeElisionHints.enable           = "skip_trivial"
+inlayHints.bindingModeHints.enable               = false
+
+[[language]]
+name        = "rust"
+auto-format = true
+
+# ─── Python ──────────────────────────────────────
+[language-server.pyright]
+command = "pyright-langserver"
+args    = ["--stdio"]
+
+[language-server.pyright.config.python.analysis]
+typeCheckingMode      = "basic"
+autoImportCompletions = true
+useLibraryCodeForTypes = true
+
+[language-server.ruff]
+command = "ruff"
+args    = ["server"]
+
+[[language]]
+name             = "python"
+language-servers = ["pyright", "ruff"]
+auto-format      = true
+indent           = { tab-width = 4, unit = "    " }
+
+# ─── JavaScript ──────────────────────────────────
+[language-server.typescript-language-server]
+command = "typescript-language-server"
+args    = ["--stdio"]
+
+[language-server.typescript-language-server.config.javascript.inlayHints]
+includeInlayParameterNameHints         = "all"
+includeInlayFunctionParameterTypeHints = true
+includeInlayVariableTypeHints          = true
+
+[language-server.typescript-language-server.config.typescript.inlayHints]
+includeInlayParameterNameHints             = "all"
+includeInlayFunctionParameterTypeHints     = true
+includeInlayVariableTypeHints              = true
+includeInlayPropertyDeclarationTypeHints   = true
+includeInlayFunctionLikeReturnTypeHints    = true
+includeInlayEnumMemberValueHints           = true
+
+[[language]]
+name             = "javascript"
+language-servers = ["typescript-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+[[language]]
+name             = "typescript"
+language-servers = ["typescript-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+[[language]]
+name             = "jsx"
+language-servers = ["typescript-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+[[language]]
+name             = "tsx"
+language-servers = ["typescript-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+# ─── Go ──────────────────────────────────────────
+[language-server.gopls]
+command = "gopls"
+
+[language-server.gopls.config.hints]
+assignVariableTypes    = true
+compositeLiteralFields = true
+compositeLiteralTypes  = true
+constantValues         = true
+functionTypeParameters = true
+parameterNames         = true
+rangeVariableTypes     = true
+
+[[language]]
+name             = "go"
+language-servers = ["gopls"]
+auto-format      = true
+indent           = { tab-width = 4, unit = "\t" }
+
+# ─── C / C++ ─────────────────────────────────────
+[language-server.clangd]
+command = "clangd"
+args    = [
+  "--background-index",
+  "--clang-tidy",
+  "--completion-style=detailed",
+  "--header-insertion=never",
+]
+
+[[language]]
+name             = "c"
+language-servers = ["clangd"]
+auto-format      = true
+indent           = { tab-width = 4, unit = "    " }
+
+[[language]]
+name             = "cpp"
+language-servers = ["clangd"]
+auto-format      = true
+indent           = { tab-width = 4, unit = "    " }
+
+# ─── Lua ─────────────────────────────────────────
+[language-server.lua-language-server]
+command = "lua-language-server"
+
+[[language]]
+name             = "lua"
+language-servers = ["lua-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+# ─── Bash ────────────────────────────────────────
+[language-server.bash-language-server]
+command = "bash-language-server"
+args    = ["start"]
+
+[[language]]
+name             = "bash"
+language-servers = ["bash-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+# ─── HTML ────────────────────────────────────────
+[language-server.vscode-html-language-server]
+command = "vscode-html-language-server"
+args    = ["--stdio"]
+
+[[language]]
+name             = "html"
+language-servers = ["vscode-html-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+# ─── CSS / SCSS ──────────────────────────────────
+[language-server.vscode-css-language-server]
+command = "vscode-css-language-server"
+args    = ["--stdio"]
+
+[[language]]
+name             = "css"
+language-servers = ["vscode-css-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+[[language]]
+name             = "scss"
+language-servers = ["vscode-css-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+# ─── JSON ────────────────────────────────────────
+[language-server.vscode-json-language-server]
+command = "vscode-json-language-server"
+args    = ["--stdio"]
+
+[language-server.vscode-json-language-server.config]
+json.format.enable   = true
+json.validate.enable = true
+provideFormatter     = true
+
+[[language]]
+name             = "json"
+language-servers = ["vscode-json-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+# ─── YAML ────────────────────────────────────────
+[language-server.yaml-language-server]
+command = "yaml-language-server"
+args    = ["--stdio"]
+
+[language-server.yaml-language-server.config.yaml]
+format.enable = true
+validate      = true
+hover         = true
+completion    = true
+keyOrdering   = false
+
+[[language]]
+name             = "yaml"
+language-servers = ["yaml-language-server"]
+auto-format      = true
+indent           = { tab-width = 2, unit = "  " }
+
+# ─── TOML ────────────────────────────────────────
+[language-server.taplo]
+command = "taplo"
+args    = ["lsp", "stdio"]
+
+[[language]]
+name             = "toml"
+language-servers = ["taplo"]
+auto-format      = true
+
+# ─── Markdown ────────────────────────────────────
+[language-server.marksman]
+command = "marksman"
+args    = ["server"]
+
+[[language]]
+name              = "markdown"
+language-servers  = ["marksman"]
+soft-wrap.enable  = true
+indent            = { tab-width = 2, unit = "  " }

@@ -1,0 +1,93 @@
+# ═══════════════════════════════════════════════
+#  Helix 主配置  ~/.config/helix/config.toml
+# ═══════════════════════════════════════════════
+
+theme = "dracula"
+
+# ─── 编辑器核心 ────────────────────────────────
+[editor]
+line-number            = "relative"   # 相对行号
+mouse                  = true
+cursorline             = true         # 高亮当前行
+color-modes            = true         # 模式对应不同光标颜色
+bufferline             = "multiple"   # 多 buffer 时顶部显示标签
+rulers                 = [80, 120]    # 列参考线
+idle-timeout           = 200          # 触发 inlay hint / 悬浮延迟 ms
+completion-trigger-len = 1
+scroll-lines           = 5
+true-color             = true
+undercurl              = true         # 波浪下划线（诊断提示）
+auto-format            = true         # 保存时自动格式化
+
+# ─── 光标形状 ───────────────────────────────────
+[editor.cursor-shape]
+normal = "block"
+insert = "bar"
+select = "underline"
+
+# ─── 文件选择器 ─────────────────────────────────
+[editor.file-picker]
+hidden          = false    # 显示隐藏文件
+follow-symlinks = true
+git-ignore      = true
+git-global      = true
+
+# ─── 状态栏 ─────────────────────────────────────
+[editor.statusline]
+left      = ["mode", "spinner", "file-name", "file-modification-indicator"]
+center    = ["version-control"]
+right     = ["diagnostics", "selections", "position", "file-encoding", "file-type"]
+separator = "│"
+mode.normal = " NORMAL "
+mode.insert = " INSERT "
+mode.select = " SELECT "
+
+# ─── LSP ─────────────────────────────────────────
+[editor.lsp]
+display-messages    = true
+display-inlay-hints = true
+snippets            = true
+
+# ─── 缩进参考线 ──────────────────────────────────
+[editor.indent-guides]
+render      = true
+character   = "╎"
+skip-levels = 1
+
+# ─── 空白字符 ─────────────────────────────────────
+[editor.whitespace.render]
+space   = "none"
+tab     = "all"
+newline = "none"
+
+[editor.whitespace.characters]
+tab    = "→"
+tabpad = " "
+
+# ─── 软换行（全局关闭，Markdown 中单独开启）────────
+[editor.soft-wrap]
+enable         = false
+wrap-indicator = "↩ "
+
+# ─── 搜索 ─────────────────────────────────────────
+[editor.search]
+smart-case  = true
+wrap-around = true
+
+# ─── 自动括号 ─────────────────────────────────────
+[editor.auto-pairs]
+'(' = ')'
+'{' = '}'
+'[' = ']'
+'"' = '"'
+'`' = '`'
+"'" = "'"
+
+# ─── 键位映射 ─────────────────────────────────────
+[keys.normal]
+C-s   = ":write"              # 保存
+C-x   = ":buffer-close"       # 关闭当前 buffer
+
+[keys.insert]
+C-s = ":write" # Ctrl and 's' to write
+Cmd-s = ":write" # Cmd or Win or Meta and 's' to write
