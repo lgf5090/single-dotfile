@@ -15,6 +15,7 @@
 # Fish shell options
 set -g fish_greeting ""  # Disable default greeting
 
+
 # 启用 Vi 模式
 fish_vi_key_bindings
 
@@ -752,3 +753,10 @@ _load_configs
 functions -e _load_configs
 
 
+
+# atuin https://docs.atuin.sh/cli/guide/delete-history/
+# Atuin configuration for Fish
+if command -v atuin > /dev/null
+    set -gx ATUIN_DB_PATH "$HOME/.local/share/atuin/history_fish.db"
+    atuin init fish | source
+end

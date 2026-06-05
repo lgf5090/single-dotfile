@@ -12,6 +12,7 @@
 # Self-contained: does NOT source any other file in this repo.
 # =============================================================================
 
+
 # Only in interactive shell
 if [[ $- == *i* ]]; then
     # 启用 Vi 模式
@@ -717,3 +718,11 @@ _load_configs
 unset -f _load_configs
 
 
+
+# atuin https://docs.atuin.sh/cli/guide/delete-history/
+# Atuin configuration for Bash
+if command -v atuin &>/dev/null; then
+    # export ATUIN_DB_PATH="$HOME/.local/share/atuin/history_bash.db"
+    export ATUIN_DB_PATH="$HOME/.local/share/atuin/history.db"
+    eval "$(atuin init bash)"
+fi

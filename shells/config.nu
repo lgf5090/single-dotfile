@@ -717,3 +717,13 @@ if ($env.SHELLS_NO_PROMPT? | is-empty) {
     $env.PROMPT_INDICATOR_VI_NORMAL = $"(ansi yellow): (ansi reset)"
     $env.PROMPT_COMMAND_RIGHT       = ""
 }
+
+
+
+# atuin https://docs.atuin.sh/cli/guide/delete-history/
+# Atuin configuration for Nushell
+if (which atuin | is-not-empty) {
+    $env.ATUIN_DB_PATH = $"($env.HOME)/.local/share/atuin/history_nu.db"
+    mkdir ($nu.data-dir | path join "vendor/autoload")
+    atuin init nu | save -f ($nu.data-dir | path join "vendor/autoload/atuin.nu")
+}

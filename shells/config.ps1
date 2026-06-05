@@ -32,12 +32,12 @@ if (Get-Command Set-PSReadLineOption -ErrorAction Ignore)
     }
     # Set HistorySavePath to XDG-compliant location if available
     $__psrl_hist_dir = if ($env:XDG_STATE_HOME)
-    { "$env:XDG_STATE_HOME/powershell" 
+    { "$env:XDG_STATE_HOME/powershell"
     } else
-    { "$HOME/.local/state/powershell" 
+    { "$HOME/.local/state/powershell"
     }
     if (-not [System.IO.Directory]::Exists($__psrl_hist_dir))
-    { $null = New-Item -ItemType Directory -Path $__psrl_hist_dir -Force -ErrorAction Ignore 
+    { $null = New-Item -ItemType Directory -Path $__psrl_hist_dir -Force -ErrorAction Ignore
     }
     $PSReadLineOpts['HistorySavePath'] = "$__psrl_hist_dir/PSReadLineHistory.txt"
     Remove-Variable __psrl_hist_dir -ErrorAction Ignore
@@ -120,7 +120,7 @@ if (Get-Command Set-PSReadLineOption -ErrorAction Ignore)
     foreach ($e in $__shells_vi_insert.GetEnumerator())
     {
         try
-        { Set-PSReadLineKeyHandler -Chord $e.Key -ViMode Insert  -Function $e.Value 
+        { Set-PSReadLineKeyHandler -Chord $e.Key -ViMode Insert  -Function $e.Value
         } catch
         {
         }
@@ -128,7 +128,7 @@ if (Get-Command Set-PSReadLineOption -ErrorAction Ignore)
     foreach ($e in $__shells_vi_command.GetEnumerator())
     {
         try
-        { Set-PSReadLineKeyHandler -Chord $e.Key -ViMode Command -Function $e.Value 
+        { Set-PSReadLineKeyHandler -Chord $e.Key -ViMode Command -Function $e.Value
         } catch
         {
         }
@@ -146,9 +146,9 @@ $SHELLS_OS = if ($IsMacOS)
 {
     if ([System.IO.File]::Exists('/proc/version') -and
         [System.IO.File]::ReadAllText('/proc/version') -match '(?i)microsoft|wsl')
-    { 'wsl' 
+    { 'wsl'
     } else
-    { 'linux' 
+    { 'linux'
     }
 } elseif ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6)
 { 'windows'
@@ -162,35 +162,35 @@ $env:SHELLS_OS = $SHELLS_OS
 # SECTION 2 — Shell environment
 # =============================================================================
 if (-not $env:EDITOR)
-{ $env:EDITOR = 'vim'          
+{ $env:EDITOR = 'vim'
 }
 if (-not $env:VISUAL)
-{ $env:VISUAL = $env:EDITOR    
+{ $env:VISUAL = $env:EDITOR
 }
 if (-not $env:PAGER)
-{ $env:PAGER  = 'less'         
+{ $env:PAGER  = 'less'
 }
 if (-not $env:LESS)
-{ $env:LESS   = '-R -F -X'     
+{ $env:LESS   = '-R -F -X'
 }
 
 if (-not $env:XDG_CONFIG_HOME)
-{ $env:XDG_CONFIG_HOME = "$HOME/.config"       
+{ $env:XDG_CONFIG_HOME = "$HOME/.config"
 }
 if (-not $env:XDG_DATA_HOME)
-{ $env:XDG_DATA_HOME   = "$HOME/.local/share"  
+{ $env:XDG_DATA_HOME   = "$HOME/.local/share"
 }
 if (-not $env:XDG_CACHE_HOME)
-{ $env:XDG_CACHE_HOME  = "$HOME/.cache"        
+{ $env:XDG_CACHE_HOME  = "$HOME/.cache"
 }
 if (-not $env:XDG_STATE_HOME)
-{ $env:XDG_STATE_HOME  = "$HOME/.local/state"  
+{ $env:XDG_STATE_HOME  = "$HOME/.local/state"
 }
 
 switch ($SHELLS_OS)
 {
     'windows'
-    { $env:MSYS = 'winsymlinks:nativestrict' 
+    { $env:MSYS = 'winsymlinks:nativestrict'
     }
 }
 
@@ -206,17 +206,17 @@ function script:__shells_path_prepend([string]$str)
     $out  = [System.Collections.Generic.List[string]]::new()
     # [OPT] Split input on BOTH ':' and ';' for cross-platform .envs compatibility
     $sep_re = if ($__shells_psep -eq ';')
-    { '[;:]' 
+    { '[;:]'
     } else
-    { '[:;]' 
+    { '[:;]'
     }
     foreach ($p in ($str -split $sep_re) + ($env:PATH -split $__shells_psep))
     {
         if (-not $p)
-        { continue 
+        { continue
         }
         if (-not $seen.Add($p))
-        { continue 
+        { continue
         }
         $out.Add($p)
     }
@@ -226,35 +226,35 @@ function script:__shells_path_prepend([string]$str)
 function script:__shells_load_envs([string]$file)
 {
     if (-not [System.IO.File]::Exists($file))
-    { return 
+    { return
     }
     foreach ($line in [System.IO.File]::ReadAllLines($file))
     {
         $line = $line.TrimStart()
         if (-not $line -or $line[0] -eq '#')
-        { continue 
+        { continue
         }
         $eq = $line.IndexOf('=')
         if ($eq -lt 1)
-        { continue 
+        { continue
         }
         $key = $line.Substring(0, $eq).TrimEnd()
         $val = $line.Substring($eq + 1).Trim()
         if ($key -notmatch '^[A-Za-z_][A-Za-z0-9_]*$')
-        { continue 
+        { continue
         }
         if ($val.Length -ge 2)
         {
             $f = $val[0]; $l = $val[$val.Length - 1]
             if (($f -eq '"' -and $l -eq '"') -or ($f -eq "'" -and $l -eq "'"))
-            { $val = $val.Substring(1, $val.Length - 2) 
+            { $val = $val.Substring(1, $val.Length - 2)
             }
         }
         $val = $val.Replace('{HOME}', $HOME).Replace('{PATH}', $env:PATH)
         if ($key -eq 'PATH')
-        { __shells_path_prepend $val 
+        { __shells_path_prepend $val
         } else
-        { [System.Environment]::SetEnvironmentVariable($key, $val) 
+        { [System.Environment]::SetEnvironmentVariable($key, $val)
         }
     }
 }
@@ -262,28 +262,28 @@ function script:__shells_load_envs([string]$file)
 function script:__shells_load_aliases([string]$file)
 {
     if (-not [System.IO.File]::Exists($file))
-    { return 
+    { return
     }
     foreach ($line in [System.IO.File]::ReadAllLines($file))
     {
         $line = $line.TrimStart()
         if (-not $line -or $line[0] -eq '#')
-        { continue 
+        { continue
         }
         $eq = $line.IndexOf('=')
         if ($eq -lt 1)
-        { continue 
+        { continue
         }
         $name = $line.Substring(0, $eq).TrimEnd()
         $body = $line.Substring($eq + 1)
         if ($name -notmatch '^[A-Za-z_][A-Za-z0-9_-]*$')
-        { continue 
+        { continue
         }
         if ($body.Length -ge 2)
         {
             $f = $body[0]; $l = $body[$body.Length - 1]
             if (($f -eq '"' -and $l -eq '"') -or ($f -eq "'" -and $l -eq "'"))
-            { $body = $body.Substring(1, $body.Length - 2) 
+            { $body = $body.Substring(1, $body.Length - 2)
             }
         }
         Set-Item -LiteralPath "function:global:$name" `
@@ -303,23 +303,23 @@ function:__shells_load_aliases -ErrorAction Ignore
 # SECTION 4 — Language & toolchain environment variables (non-PATH)
 # =============================================================================
 if (-not $env:NPM_CONFIG_PREFIX)
-{ $env:NPM_CONFIG_PREFIX = "$HOME/.npm-global" 
+{ $env:NPM_CONFIG_PREFIX = "$HOME/.npm-global"
 }
 if (-not $env:PNPM_HOME)
-{ $env:PNPM_HOME         = "$HOME/.pnpm-global" 
+{ $env:PNPM_HOME         = "$HOME/.pnpm-global"
 }
 if ([System.IO.Directory]::Exists("$HOME/.fnm"))
-{ $env:FNM_DIR     = "$HOME/.fnm"  
+{ $env:FNM_DIR     = "$HOME/.fnm"
 }
 if ([System.IO.Directory]::Exists("$HOME/.bun"))
-{ $env:BUN_INSTALL = "$HOME/.bun"  
+{ $env:BUN_INSTALL = "$HOME/.bun"
 }
 if ([System.IO.Directory]::Exists("$HOME/.deno"))
-{ $env:DENO_INSTALL= "$HOME/.deno" 
+{ $env:DENO_INSTALL= "$HOME/.deno"
 }
 
 if (-not $env:GOPATH)
-{ $env:GOPATH = "$HOME/go" 
+{ $env:GOPATH = "$HOME/go"
 }
 if (-not $env:GOROOT)
 {
@@ -327,7 +327,7 @@ if (-not $env:GOROOT)
         '/opt/homebrew/opt/go/libexec', '/usr/local/go', "$HOME/.local/go")
     {
         if ([System.IO.Directory]::Exists($d))
-        { $env:GOROOT = $d; break 
+        { $env:GOROOT = $d; break
         }
     }
 }
@@ -338,28 +338,28 @@ if (-not $env:ANACONDA_HOME)
         '/opt/anaconda3', '/opt/miniconda3')
     {
         if ([System.IO.Directory]::Exists($d))
-        { $env:ANACONDA_HOME = $d; break 
+        { $env:ANACONDA_HOME = $d; break
         }
     }
 }
 if ([System.IO.Directory]::Exists("$HOME/.poetry"))
-{ $env:POETRY_HOME = "$HOME/.poetry" 
+{ $env:POETRY_HOME = "$HOME/.poetry"
 }
 if ([System.IO.Directory]::Exists("$HOME/.pyenv"))
-{ $env:PYENV_ROOT  = "$HOME/.pyenv"  
+{ $env:PYENV_ROOT  = "$HOME/.pyenv"
 }
 
 if (-not $env:JAVA_HOME)
 {
     if ([System.IO.File]::Exists('/usr/libexec/java_home'))
-    { $env:JAVA_HOME = (& /usr/libexec/java_home 2>$null) 
+    { $env:JAVA_HOME = (& /usr/libexec/java_home 2>$null)
     } else
     {
         foreach ($d in '/usr/lib/jvm/default-java',
             '/usr/lib/jvm/java-11-openjdk-amd64')
         {
             if ([System.IO.Directory]::Exists($d))
-            { $env:JAVA_HOME = $d; break 
+            { $env:JAVA_HOME = $d; break
             }
         }
     }
@@ -370,17 +370,17 @@ if ($SHELLS_OS -eq 'linux' -or $SHELLS_OS -eq 'wsl')
     foreach ($p in '/usr/lib/x86_64-linux-gnu', '/usr/lib/aarch64-linux-gnu')
     {
         if (-not [System.IO.Directory]::Exists($p))
-        { continue 
+        { continue
         }
         $env:LIBRARY_PATH    = if ($env:LIBRARY_PATH)
-        { "${p}:$env:LIBRARY_PATH"    
+        { "${p}:$env:LIBRARY_PATH"
         } else
-        { $p 
+        { $p
         }
         $env:LD_LIBRARY_PATH = if ($env:LD_LIBRARY_PATH)
-        { "${p}:$env:LD_LIBRARY_PATH" 
+        { "${p}:$env:LD_LIBRARY_PATH"
         } else
-        { $p 
+        { $p
         }
         $env:RUSTFLAGS       = "-L $p"
         break
@@ -388,10 +388,10 @@ if ($SHELLS_OS -eq 'linux' -or $SHELLS_OS -eq 'wsl')
 }
 
 if (-not $env:DOCKER_BUILDKIT)
-{ $env:DOCKER_BUILDKIT          = '1' 
+{ $env:DOCKER_BUILDKIT          = '1'
 }
 if (-not $env:COMPOSE_DOCKER_CLI_BUILD)
-{ $env:COMPOSE_DOCKER_CLI_BUILD = '1' 
+{ $env:COMPOSE_DOCKER_CLI_BUILD = '1'
 }
 
 
@@ -404,13 +404,13 @@ function script:__shells_prepend_dir
     foreach ($d in $args)
     {
         if (-not $d)
-        { continue 
+        { continue
         }
         if (-not [System.IO.Directory]::Exists($d))
-        { continue 
+        { continue
         }
         if (-not "$sep$env:PATH$sep".Contains("$sep$d$sep"))
-        { $env:PATH = "$d$sep$env:PATH" 
+        { $env:PATH = "$d$sep$env:PATH"
         }
     }
 }
@@ -420,13 +420,13 @@ function script:__shells_append_dir
     foreach ($d in $args)
     {
         if (-not $d)
-        { continue 
+        { continue
         }
         if (-not [System.IO.Directory]::Exists($d))
-        { continue 
+        { continue
         }
         if (-not "$sep$env:PATH$sep".Contains("$sep$d$sep"))
-        { $env:PATH = "$env:PATH$sep$d" 
+        { $env:PATH = "$env:PATH$sep$d"
         }
     }
 }
@@ -439,9 +439,9 @@ __shells_append_dir `
     "$HOME/.local/Applications"
 
 $__shells_cargo = if ($env:CARGO_HOME)
-{ $env:CARGO_HOME 
+{ $env:CARGO_HOME
 } else
-{ "$HOME/.cargo" 
+{ "$HOME/.cargo"
 }
 __shells_prepend_dir `
     "$__shells_cargo/bin" `
@@ -449,15 +449,15 @@ __shells_prepend_dir `
     "$HOME/.opencode/bin"
 Remove-Variable __shells_cargo -Scope Script -ErrorAction Ignore
 if ([System.IO.File]::Exists("$HOME/.cargo/env.ps1"))
-{ . "$HOME/.cargo/env.ps1" 
+{ . "$HOME/.cargo/env.ps1"
 }
 
 __shells_prepend_dir `
 $(if ($env:BUN_INSTALL)
-    { "$env:BUN_INSTALL/bin"   
+    { "$env:BUN_INSTALL/bin"
     }) `
 $(if ($env:DENO_INSTALL)
-    { "$env:DENO_INSTALL/bin"  
+    { "$env:DENO_INSTALL/bin"
     }) `
     "$env:NPM_CONFIG_PREFIX/bin" `
     $env:PNPM_HOME               `
@@ -469,13 +469,13 @@ $(if ($env:DENO_INSTALL)
 
 __shells_prepend_dir `
 $(if ($env:PYENV_ROOT)
-    { "$env:PYENV_ROOT/bin"    
+    { "$env:PYENV_ROOT/bin"
     }) `
 $(if ($env:ANACONDA_HOME)
-    { "$env:ANACONDA_HOME/bin" 
+    { "$env:ANACONDA_HOME/bin"
     }) `
 $(if ($env:POETRY_HOME)
-    { "$env:POETRY_HOME/bin"   
+    { "$env:POETRY_HOME/bin"
     }) `
     "$HOME/.poetry/bin"  `
     "$HOME/.local/pipx/bin"
@@ -483,7 +483,7 @@ $(if ($env:POETRY_HOME)
 __shells_prepend_dir `
     "$env:GOPATH/bin" `
 $(if ($env:GOROOT)
-    { "$env:GOROOT/bin" 
+    { "$env:GOROOT/bin"
     })
 
 if ($SHELLS_OS -eq 'linux' -or $SHELLS_OS -eq 'wsl')
@@ -515,11 +515,11 @@ foreach ($__shells_brew in '/home/linuxbrew/.linuxbrew/bin/brew',
     "$HOME/.linuxbrew/bin/brew", '/opt/homebrew/bin/brew', '/usr/local/bin/brew')
 {
     if (-not [System.IO.File]::Exists($__shells_brew))
-    { continue 
+    { continue
     }
     $__shells_brew_init = & $__shells_brew shellenv pwsh 2>$null
     if ($LASTEXITCODE -eq 0 -and $__shells_brew_init)
-    { $__shells_brew_init -join "`n" | Invoke-Expression 
+    { $__shells_brew_init -join "`n" | Invoke-Expression
     } else
     {
         $prefix = (& $__shells_brew --prefix 2>$null | Select-Object -First 1)
@@ -551,18 +551,18 @@ Remove-Variable __shells_psep -ErrorAction Ignore
 # [OPT-4] Shared human-readable size formatter — used by both ll and lt
 $__shells_size_fmt = {
     if ($_.PSIsContainer)
-    { '<DIR>' 
+    { '<DIR>'
     } else
     {
         $n = $_.Length
         if     ($n -ge 1GB)
-        { '{0:N1}G' -f ($n / 1GB) 
+        { '{0:N1}G' -f ($n / 1GB)
         } elseif ($n -ge 1MB)
-        { '{0:N1}M' -f ($n / 1MB) 
+        { '{0:N1}M' -f ($n / 1MB)
         } elseif ($n -ge 1KB)
-        { '{0:N1}K' -f ($n / 1KB) 
+        { '{0:N1}K' -f ($n / 1KB)
         } else
-        { "${n}B" 
+        { "${n}B"
         }
     }
 }
@@ -576,13 +576,13 @@ $__shells_ls_table = @(
 
 # ---- ls family (Get-ChildItem) ----------------------------------------------
 function global:ls
-{ Get-ChildItem        @args 
+{ Get-ChildItem        @args
 }
 function global:la
-{ Get-ChildItem -Force @args 
+{ Get-ChildItem -Force @args
 }
 function global:l
-{ Get-ChildItem        @args | Format-Wide -AutoSize -Property Name 
+{ Get-ChildItem        @args | Format-Wide -AutoSize -Property Name
 }
 
 function global:ll
@@ -608,9 +608,9 @@ function global:grep
         [string[]]$Path
     )
     if ($Path)
-    { Select-String -Pattern $Pattern -Path $Path 
+    { Select-String -Pattern $Pattern -Path $Path
     } else
-    { $input | Select-String -Pattern $Pattern 
+    { $input | Select-String -Pattern $Pattern
     }
 }
 
@@ -624,9 +624,9 @@ function global:fgrep
         [string[]]$Path
     )
     if ($Path)
-    { Select-String -SimpleMatch -Pattern $Pattern -Path $Path 
+    { Select-String -SimpleMatch -Pattern $Pattern -Path $Path
     } else
-    { $input | Select-String -SimpleMatch -Pattern $Pattern 
+    { $input | Select-String -SimpleMatch -Pattern $Pattern
     }
 }
 
@@ -640,21 +640,21 @@ function global:egrep
         [string[]]$Path
     )
     if ($Path)
-    { Select-String -Pattern $Pattern -Path $Path 
+    { Select-String -Pattern $Pattern -Path $Path
     } else
-    { $input | Select-String -Pattern $Pattern 
+    { $input | Select-String -Pattern $Pattern
     }
 }
 
 # ---- Directory navigation / reload / path -----------------------------------
 function global:..
-{ Set-Location ..       
+{ Set-Location ..
 }
 function global:...
-{ Set-Location ../..    
+{ Set-Location ../..
 }
 function global:....
-{ Set-Location ../../.. 
+{ Set-Location ../../..
 }
 
 function global:md
@@ -664,19 +664,19 @@ function global:md
 }
 
 function global:now
-{ Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz' 
+{ Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz'
 }
 function global:reload
 {
     # [OPT-15] Guard: only reload if $PROFILE actually exists
     if ($PROFILE -and (Test-Path $PROFILE))
-    { . $PROFILE 
+    { . $PROFILE
     } else
-    { Write-Warning "No `$PROFILE found at: $PROFILE" 
+    { Write-Warning "No `$PROFILE found at: $PROFILE"
     }
 }
 function global:path
-{ $env:PATH -split [System.IO.Path]::PathSeparator 
+{ $env:PATH -split [System.IO.Path]::PathSeparator
 }
 
 
@@ -688,55 +688,55 @@ switch ($SHELLS_OS)
     'macos'
     {
         function global:clip
-        { $input | Set-Clipboard 
+        { $input | Set-Clipboard
         }
         function global:paste
-        { Get-Clipboard 
+        { Get-Clipboard
         }
         function global:finder
-        { open . @args 
+        { open . @args
         }
         function global:brewup
-        { brew update; brew upgrade; brew cleanup 
+        { brew update; brew upgrade; brew cleanup
         }
     }
     { $_ -eq 'linux' -or $_ -eq 'wsl' }
     {
         function global:clip
-        { $input | Set-Clipboard 
+        { $input | Set-Clipboard
         }
         function global:paste
-        { Get-Clipboard 
+        { Get-Clipboard
         }
         if ($SHELLS_OS -eq 'wsl')
         {
             function global:explorer
-            { explorer.exe . @args 
+            { explorer.exe . @args
             }
         }
         if (Get-Command brew -ErrorAction Ignore)
         {
             function global:brewup
-            { brew update; brew upgrade; brew cleanup 
+            { brew update; brew upgrade; brew cleanup
             }
         }
         if (Get-Command apt -ErrorAction Ignore)
         {
             function global:aptup
-            { sudo apt update; sudo apt upgrade 
+            { sudo apt update; sudo apt upgrade
             }
         }
     }
     'windows'
     {
         function global:clip
-        { $input | Set-Clipboard 
+        { $input | Set-Clipboard
         }
         function global:paste
-        { Get-Clipboard 
+        { Get-Clipboard
         }
         function global:open
-        { Start-Process @args 
+        { Start-Process @args
         }
     }
 }
@@ -787,7 +787,7 @@ function global:localip
             {
                 $ip = & ipconfig getifaddr $iface 2>$null
                 if ($ip)
-                { $ips += $ip 
+                { $ips += $ip
                 }
             }
             if (-not $ips)
@@ -798,7 +798,7 @@ function global:localip
                     ForEach-Object { $_.Matches[0].Groups[1].Value } |
                     Where-Object { $_ -ne '127.0.0.1' }
             } else
-            { $ips 
+            { $ips
             }
         }
         default  # linux / wsl
@@ -806,7 +806,7 @@ function global:localip
             # hostname -I is the simplest cross-platform Linux approach
             $raw = (& hostname -I 2>$null)
             if ($raw)
-            { $raw.Trim() 
+            { $raw.Trim()
             } else
             {
                 # fallback: parse ip addr
@@ -869,10 +869,10 @@ function global:ports
 # ---- Proxy toggle -----------------------------------------------------------
 # [OPT-11] Consolidate proxy helpers with shared internal function
 if (-not $env:PROXY_HOST)
-{ $env:PROXY_HOST = '127.0.0.1' 
+{ $env:PROXY_HOST = '127.0.0.1'
 }
 if (-not $env:PROXY_PORT)
-{ $env:PROXY_PORT = '3067'       
+{ $env:PROXY_PORT = '3067'
 }
 
 function script:__shells_parse_proxy_args
@@ -884,13 +884,13 @@ function script:__shells_parse_proxy_args
         {
         }
         1
-        { $p = $args[0] 
+        { $p = $args[0]
         }
         2
-        { $h = $args[0]; $p = $args[1] 
+        { $h = $args[0]; $p = $args[1]
         }
         default
-        { Write-Error 'usage: proxy [[host] port]'; return $null 
+        { Write-Error 'usage: proxy [[host] port]'; return $null
         }
     }
     return @{ Host = $h; Port = $p }
@@ -900,7 +900,7 @@ function global:proxy
 {
     $r = __shells_parse_proxy_args @args
     if (-not $r)
-    { return 
+    { return
     }
     $url = "http://$($r.Host):$($r.Port)"
     $env:http_proxy = $url; $env:https_proxy = $url
@@ -912,7 +912,7 @@ function global:socks5
 {
     $r = __shells_parse_proxy_args @args
     if (-not $r)
-    { return 
+    { return
     }
     $url = "socks5://$($r.Host):$($r.Port)"
     $env:all_proxy = $url; $env:ALL_PROXY = $url
@@ -922,7 +922,7 @@ function global:socks5
 function global:unproxy
 {
     foreach ($v in 'http_proxy','https_proxy','HTTP_PROXY','HTTPS_PROXY','all_proxy','ALL_PROXY')
-    { [System.Environment]::SetEnvironmentVariable($v, $null) 
+    { [System.Environment]::SetEnvironmentVariable($v, $null)
     }
     'proxy off'
 }
@@ -943,7 +943,7 @@ Remove-Item function:__shells_parse_proxy_args -ErrorAction Ignore
 function global:mkcd
 {
     if (-not $args[0])
-    { Write-Error 'usage: mkcd <dir>'; return 
+    { Write-Error 'usage: mkcd <dir>'; return
     }
     $null = New-Item -ItemType Directory -Force -Path $args[0] -ErrorAction Stop
     Set-Location -LiteralPath $args[0]
@@ -952,7 +952,7 @@ function global:mkcd
 function global:bak
 {
     if (-not $args[0])
-    { Write-Error 'usage: bak <path>'; return 
+    { Write-Error 'usage: bak <path>'; return
     }
     $ts = Get-Date -Format 'yyyyMMdd_HHmmss'
     Copy-Item -LiteralPath $args[0] -Destination "$($args[0]).bak.$ts" -Recurse -Force
@@ -961,7 +961,7 @@ function global:bak
 function global:mbak
 {
     if (-not $args[0])
-    { Write-Error 'usage: mbak <path>'; return 
+    { Write-Error 'usage: mbak <path>'; return
     }
     $ts = Get-Date -Format 'yyyyMMdd_HHmmss'
     Move-Item -LiteralPath $args[0] -Destination "$($args[0]).bak.$ts"
@@ -972,7 +972,7 @@ function global:weather
 }
 
 function global:uuid
-{ (New-Guid).Guid 
+{ (New-Guid).Guid
 }
 
 # [OPT-13] Additional utility functions
@@ -983,9 +983,9 @@ function global:touch
     foreach ($f in $args)
     {
         if ([System.IO.File]::Exists($f))
-        { [System.IO.File]::SetLastWriteTime($f, [datetime]::Now) 
+        { [System.IO.File]::SetLastWriteTime($f, [datetime]::Now)
         } else
-        { $null = New-Item -ItemType File -Path $f -Force 
+        { $null = New-Item -ItemType File -Path $f -Force
         }
     }
 }
@@ -999,12 +999,12 @@ function global:which
         if ($found)
         {
             if ($found.Source)
-            { $found.Source 
+            { $found.Source
             } else
-            { $found.CommandType.ToString() + ': ' + $found.Name 
+            { $found.CommandType.ToString() + ': ' + $found.Name
             }
         } else
-        { Write-Warning "${cmd}: not found" 
+        { Write-Warning "${cmd}: not found"
         }
     }
 }
@@ -1013,43 +1013,43 @@ function global:which
 function global:extract
 {
     if (-not $args[0])
-    { Write-Error 'usage: extract <archive>'; return 
+    { Write-Error 'usage: extract <archive>'; return
     }
     $file = $args[0]
     if (-not (Test-Path $file))
-    { Write-Error "File not found: $file"; return 
+    { Write-Error "File not found: $file"; return
     }
     switch -Regex ($file)
     {
         '\.tar\.gz$|\.tgz$'
-        { tar xzf $file 
+        { tar xzf $file
         }
         '\.tar\.bz2$|\.tbz2$'
-        { tar xjf $file 
+        { tar xjf $file
         }
         '\.tar\.xz$|\.txz$'
-        { tar xJf $file 
+        { tar xJf $file
         }
         '\.tar$'
-        { tar xf  $file 
+        { tar xf  $file
         }
         '\.zip$'
-        { Expand-Archive -Path $file -DestinationPath . -Force 
+        { Expand-Archive -Path $file -DestinationPath . -Force
         }
         '\.gz$'
-        { gunzip $file 
+        { gunzip $file
         }
         '\.bz2$'
-        { bunzip2 $file 
+        { bunzip2 $file
         }
         '\.7z$'
-        { 7z x $file 
+        { 7z x $file
         }
         '\.rar$'
-        { unrar x $file 
+        { unrar x $file
         }
         default
-        { Write-Error "Unsupported archive format: $file" 
+        { Write-Error "Unsupported archive format: $file"
         }
     }
 }
@@ -1077,9 +1077,9 @@ if (-not $env:SHELLS_NO_PROMPT)
         $e = [char]27
         $global:__shells_has_git   = [bool](Get-Command git -ErrorAction Ignore)
         $global:__shells_user      = if ($env:USER)
-        { $env:USER 
+        { $env:USER
         } else
-        { $env:USERNAME 
+        { $env:USERNAME
         }
         $global:__shells_host      = [System.Net.Dns]::GetHostName()
         $global:__shells_c_reset   = "$e[0m"
@@ -1095,23 +1095,23 @@ if (-not $env:SHELLS_NO_PROMPT)
         {
             $ok = $?; $rc = $LASTEXITCODE
             if ($null -eq $rc)
-            { $rc = 0 
+            { $rc = 0
             }
             if (-not $ok -and $rc -eq 0)
-            { $rc = 1 
+            { $rc = 1
             }
 
             $now = (Get-Date).ToString('HH:mm:ss')
             $cwd = $PWD.Path
             if ($cwd.StartsWith($HOME, [System.StringComparison]::Ordinal))
-            { $cwd = '~' + $cwd.Substring($HOME.Length) 
+            { $cwd = '~' + $cwd.Substring($HOME.Length)
             }
 
             $extra = ''
             if ($env:VIRTUAL_ENV)
-            { $extra = " $($__shells_c_cyan)($(Split-Path -Leaf $env:VIRTUAL_ENV))$($__shells_c_reset)" 
+            { $extra = " $($__shells_c_cyan)($(Split-Path -Leaf $env:VIRTUAL_ENV))$($__shells_c_reset)"
             } elseif ($env:CONDA_DEFAULT_ENV -and $env:CONDA_DEFAULT_ENV -ne 'base')
-            { $extra = " $($__shells_c_cyan)($env:CONDA_DEFAULT_ENV)$($__shells_c_reset)" 
+            { $extra = " $($__shells_c_cyan)($env:CONDA_DEFAULT_ENV)$($__shells_c_reset)"
             }
 
             # [OPT-5][OPT-6] Optimized git status: single `git status` call
@@ -1129,9 +1129,9 @@ if (-not $env:SHELLS_NO_PROMPT)
                         # Any remaining lines = dirty (uncommitted changes)
                         $dirtyLines = $gitOut | Select-Object -Skip 1
                         $dirty = if ($dirtyLines)
-                        { '*' 
+                        { '*'
                         } else
-                        { '' 
+                        { ''
                         }
                         $extra += " $($__shells_c_magenta)$branch$dirty$($__shells_c_reset)"
                     }
@@ -1143,7 +1143,7 @@ if (-not $env:SHELLS_NO_PROMPT)
             $p += " $($__shells_c_blue)[$cwd]$($__shells_c_reset)"
             $p += $extra
             if ($rc -ne 0)
-            { $p += " $($__shells_c_red)[$rc]$($__shells_c_reset)" 
+            { $p += " $($__shells_c_red)[$rc]$($__shells_c_reset)"
             }
             $p += "`n$($__shells_c_cyan)`$$($__shells_c_reset) "
 
@@ -1151,4 +1151,14 @@ if (-not $env:SHELLS_NO_PROMPT)
             $p
         }
     }
+}
+
+
+
+# atuin https://docs.atuin.sh/cli/guide/delete-history/
+# Atuin configuration for PowerShell
+if (Get-Command atuin -ErrorAction SilentlyContinue)
+{
+    $env:ATUIN_DB_PATH = "$env:USERPROFILE\.local\share\atuin\history_powershell.db"
+    Invoke-Expression (& { atuin init powershell | Out-String })
 }

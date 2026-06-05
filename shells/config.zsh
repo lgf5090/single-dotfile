@@ -29,7 +29,7 @@ setopt HIST_IGNORE_DUPS
 # 去除连续重复命令
 setopt HIST_IGNORE_ALL_DUPS
 # 记录命令执行时间
-setopt EXTENDED_HISTORY
+# setopt EXTENDED_HISTORY
 
 
 # Only in interactive shell
@@ -162,20 +162,6 @@ export SHELLS_OS
 : ${PAGER:=less}
 : ${LESS:=-R -F -X}
 export EDITOR VISUAL PAGER LESS
-
-# ---- zsh history (analogous to bash HISTSIZE / HISTCONTROL / HISTIGNORE) ----
-: ${HISTFILE:=$HOME/.zsh_history}
-: ${HISTSIZE:=10000}
-: ${SAVEHIST:=20000}
-# HIST_IGNORE_ALL_DUPS  = remove older duplicates (bash's `erasedups`)
-# HIST_IGNORE_SPACE     = entries starting with space aren't saved (bash `ignorespace`)
-# HIST_IGNORE_DUPS      = consecutive duplicates aren't saved      (bash `ignoredups`)
-# HIST_REDUCE_BLANKS    = collapse extra whitespace in saved entries
-# SHARE_HISTORY         = sync history across concurrent sessions
-# APPEND_HISTORY        = append on exit, don't overwrite
-# EXTENDED_HISTORY      = save timestamp + duration with each entry
-setopt APPEND_HISTORY HIST_IGNORE_DUPS HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE \
-       HIST_REDUCE_BLANKS HIST_FIND_NO_DUPS SHARE_HISTORY EXTENDED_HISTORY
 
 # ---- XDG Base Directory -----------------------------------------------------
 : ${XDG_CONFIG_HOME:=$HOME/.config}
@@ -769,7 +755,13 @@ unset -f _load_configs
 
 
 
-
+# atuin https://docs.atuin.sh/cli/guide/delete-history/
+# Atuin configuration
+if command -v atuin &>/dev/null; then
+    # export ATUIN_DB_PATH="$HOME/.local/share/atuin/history_zsh.db"
+    export ATUIN_DB_PATH="$HOME/.local/share/atuin/history.db"
+    eval "$(atuin init zsh)"
+fi
 
 
 # =============================================================================
