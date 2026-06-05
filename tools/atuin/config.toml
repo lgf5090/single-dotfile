@@ -127,6 +127,12 @@
 #   "^secret-cmd",
 #   "^innocuous-cmd .*--secret=.+",
 # ]
+history_filter = [
+    "^ls$",           # Exclude bare 'ls' commands
+    "^ll$",           # Exclude bare 'll' commands
+    "^la$",           # Exclude bare 'la' commands
+    "^cd$ ",          # Exclude cd commands
+]
 
 ## prevent commands run with cwd matching any of these regexes from being written
 ## to history. Note that these regular expressions are unanchored, i.e. if they don't
