@@ -759,7 +759,8 @@ unset -f _load_configs
 # Atuin configuration
 if command -v atuin &>/dev/null; then
     # export ATUIN_DB_PATH="$HOME/.local/share/atuin/history_zsh.db"
-    export ATUIN_DB_PATH="$HOME/.local/share/atuin/history.db"
+    # export ATUIN_DB_PATH="$HOME/.local/share/atuin/history.db"
+    # export ATUIN_HOST="zsh"
     eval "$(atuin init zsh --disable-up-arrow)"
 fi
 
