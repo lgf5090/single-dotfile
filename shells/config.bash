@@ -727,3 +727,8 @@ if command -v atuin &>/dev/null; then
     # export ATUIN_HOST="bash"
     eval "$(atuin init bash --disable-up-arrow)"
 fi
+
+# zoxide https://github.com/ajeetdsouza/zoxide
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init bash)"
+fi

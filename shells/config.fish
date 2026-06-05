@@ -761,3 +761,8 @@ if command -v atuin > /dev/null
     # set -gx ATUIN_HOST "fish"
     atuin init fish --disable-up-arrow | source
 end
+
+# zoxide https://github.com/ajeetdsouza/zoxide
+if command -v zoxide > /dev/null
+    zoxide init fish | source
+end

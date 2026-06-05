@@ -727,3 +727,9 @@ if (which atuin | is-not-empty) {
     mkdir ($nu.data-dir | path join "vendor/autoload")
     atuin init nu --disable-up-arrow | save -f ($nu.data-dir | path join "vendor/autoload/atuin.nu")
 }
+
+# zoxide https://github.com/ajeetdsouza/zoxide
+if (which zoxide | is-not-empty) {
+    mkdir ($nu.data-dir | path join "vendor/autoload")
+    zoxide init nushell | save -f ($nu.data-dir | path join "vendor/autoload/zoxide.nu")
+}

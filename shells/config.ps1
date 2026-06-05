@@ -1162,3 +1162,9 @@ if (Get-Command atuin -ErrorAction SilentlyContinue)
     $env:ATUIN_DB_PATH = "$env:USERPROFILE\.local\share\atuin\history_powershell.db"
     Invoke-Expression (& { atuin init powershell --disable-up-arrow | Out-String })
 }
+
+# zoxide https://github.com/ajeetdsouza/zoxide
+if (Get-Command zoxide -ErrorAction SilentlyContinue)
+{
+    Invoke-Expression (& { zoxide init powershell | Out-String })
+}
