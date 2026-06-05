@@ -20,13 +20,13 @@ if (Get-Command Set-PSReadLineOption -ErrorAction Ignore)
     Set-PSReadLineOption -EditMode Vi
     Set-PSReadLineOption -BellStyle None
     Set-PSReadLineOption -HistoryNoDuplicates
-    Set-PSReadLineOption -HistorySearchCursorMovesToEnd
+    Set-PSReadLineOption -HistorySearchCursorMovesToEnd   # 去掉原来的重复调用
     Set-PSReadLineOption -PredictionSource History -ErrorAction Ignore
     Set-PSReadLineOption -PredictionViewStyle ListView
-    Set-PSReadLineOption -HistorySearchCursorMovesToEnd
     Set-PSReadLineOption -MaximumHistoryCount 10000
 
-    $__shells_vi_insert = [ordered]@{
+    # Vi Insert 模式绑定
+    $__vi_insert = [ordered]@{
         'Ctrl+a'        = 'BeginningOfLine'
         'Ctrl+e'        = 'EndOfLine'
         'Ctrl+f'        = 'ForwardChar'
@@ -59,7 +59,9 @@ if (Get-Command Set-PSReadLineOption -ErrorAction Ignore)
         'PageDown'      = 'HistorySearchForward'
         'Delete'        = 'DeleteChar'
     }
-    $__shells_vi_command = [ordered]@{
+
+    # Vi Command 模式绑定
+    $__vi_command = [ordered]@{
         'Ctrl+a'    = 'BeginningOfLine'
         'Ctrl+e'    = 'EndOfLine'
         'Ctrl+f'    = 'ForwardChar'
@@ -85,144 +87,170 @@ if (Get-Command Set-PSReadLineOption -ErrorAction Ignore)
         'End'       = 'EndOfLine'
         'Delete'    = 'DeleteChar'
     }
-    foreach ($e in $__shells_vi_insert.GetEnumerator())
+
+    foreach ($e in $__vi_insert.GetEnumerator())
     {
         try { Set-PSReadLineKeyHandler -Chord $e.Key -ViMode Insert  -Function $e.Value } catch {}
     }
-    foreach ($e in $__shells_vi_command.GetEnumerator())
+    foreach ($e in $__vi_command.GetEnumerator())
     {
         try { Set-PSReadLineKeyHandler -Chord $e.Key -ViMode Command -Function $e.Value } catch {}
     }
-    Remove-Variable -Name __shells_vi_insert, __shells_vi_command -Scope Script -ErrorAction Ignore
+
+    # 统一清理临时变量
+    Remove-Variable -Name __vi_insert, __vi_command -ErrorAction Ignore
 }
 
 
 # =============================================================================
 # SECTION 1 — OS detection ($SHELLS_OS)
 # =============================================================================
-$SHELLS_OS = if ($IsMacOS)
-{ 'macos'
-} elseif ($IsLinux)
-{
-    if ([System.IO.File]::Exists('/proc/version') -and
-        [System.IO.File]::ReadAllText('/proc/version') -match '(?i)microsoft|wsl')
-    { 'wsl' }
-    else
-    { 'linux' }
-} elseif ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6)
-{ 'windows'
-} else
-{ 'unknown'
-}
+$SHELLS_OS =
+    if ($IsMacOS)  { 'macos' }
+    elseif ($IsLinux)
+    {
+        if ([System.IO.File]::Exists('/proc/version') -and
+            [System.IO.File]::ReadAllText('/proc/version') -match '(?i)microsoft|wsl')
+        { 'wsl' } else { 'linux' }
+    }
+    elseif ($IsWindows -or $PSVersionTable.PSVersion.Major -lt 6) { 'windows' }
+    else { 'unknown' }
+
 $env:SHELLS_OS = $SHELLS_OS
 
 
 # =============================================================================
 # SECTION 2 — Shell environment
 # =============================================================================
-if (-not $env:EDITOR) { $env:EDITOR = 'vim'          }
-if (-not $env:VISUAL) { $env:VISUAL = $env:EDITOR    }
-if (-not $env:PAGER)  { $env:PAGER  = 'less'         }
-if (-not $env:LESS)   { $env:LESS   = '-R -F -X'     }
+if (-not $env:EDITOR) { $env:EDITOR = 'vim'       }
+if (-not $env:VISUAL) { $env:VISUAL = $env:EDITOR }
+if (-not $env:PAGER)  { $env:PAGER  = 'less'      }
+if (-not $env:LESS)   { $env:LESS   = '-R -F -X'  }
 
-if (-not $env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME = "$HOME/.config"       }
-if (-not $env:XDG_DATA_HOME)   { $env:XDG_DATA_HOME   = "$HOME/.local/share"  }
-if (-not $env:XDG_CACHE_HOME)  { $env:XDG_CACHE_HOME  = "$HOME/.cache"        }
-if (-not $env:XDG_STATE_HOME)  { $env:XDG_STATE_HOME  = "$HOME/.local/state"  }
+if (-not $env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME = "$HOME/.config"      }
+if (-not $env:XDG_DATA_HOME)   { $env:XDG_DATA_HOME   = "$HOME/.local/share" }
+if (-not $env:XDG_CACHE_HOME)  { $env:XDG_CACHE_HOME  = "$HOME/.cache"       }
+if (-not $env:XDG_STATE_HOME)  { $env:XDG_STATE_HOME  = "$HOME/.local/state" }
 
-switch ($SHELLS_OS)
-{
-    'windows' { $env:MSYS = 'winsymlinks:nativestrict' }
-}
+if ($SHELLS_OS -eq 'windows') { $env:MSYS = 'winsymlinks:nativestrict' }
 
 
 # =============================================================================
 # SECTION 3 — User file loaders (~/.envs and ~/.aliases)
 # =============================================================================
-$__shells_psep = [System.IO.Path]::PathSeparator
+# 使用脚本级变量存储路径分隔符，供后续 PATH 操作复用
+$script:__psep = [System.IO.Path]::PathSeparator
 
-function script:__shells_path_prepend([string]$str)
+function script:__load_envs([string]$File)
 {
-    $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
-    $out  = [System.Collections.Generic.List[string]]::new()
-    foreach ($p in ($str -split ':') + ($env:PATH -split $__shells_psep))
-    {
-        if (-not $p)            { continue }
-        if (-not $seen.Add($p)) { continue }
-        $out.Add($p)
-    }
-    $env:PATH = $out -join $__shells_psep
-}
+    if (-not [System.IO.File]::Exists($File)) { return }
 
-function script:__shells_load_envs([string]$file)
-{
-    if (-not [System.IO.File]::Exists($file)) { return }
-    foreach ($line in [System.IO.File]::ReadAllLines($file))
+    foreach ($line in [System.IO.File]::ReadAllLines($File))
     {
         $line = $line.TrimStart()
         if (-not $line -or $line[0] -eq '#') { continue }
+
         $eq = $line.IndexOf('=')
         if ($eq -lt 1) { continue }
+
         $key = $line.Substring(0, $eq).TrimEnd()
         $val = $line.Substring($eq + 1).Trim()
+
         if ($key -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { continue }
+
+        # 去除引号
         if ($val.Length -ge 2)
         {
             $f = $val[0]; $l = $val[$val.Length - 1]
             if (($f -eq '"' -and $l -eq '"') -or ($f -eq "'" -and $l -eq "'"))
             { $val = $val.Substring(1, $val.Length - 2) }
         }
+
         $val = $val.Replace('{HOME}', $HOME).Replace('{PATH}', $env:PATH)
-        if ($key -eq 'PATH') { __shells_path_prepend $val }
-        else { [System.Environment]::SetEnvironmentVariable($key, $val) }
+
+        if ($key -eq 'PATH')
+        {
+            # 修复原版硬编码 ':' 的 bug，改用平台分隔符
+            $seen = [System.Collections.Generic.HashSet[string]]::new(
+                        [System.StringComparer]::Ordinal)
+            $out  = [System.Collections.Generic.List[string]]::new()
+            foreach ($p in ($val -split $script:__psep) +
+                           ($env:PATH -split $script:__psep))
+            {
+                if ($p -and $seen.Add($p)) { $out.Add($p) }
+            }
+            $env:PATH = $out -join $script:__psep
+        }
+        else
+        {
+            [System.Environment]::SetEnvironmentVariable($key, $val)
+        }
     }
 }
 
-function script:__shells_load_aliases([string]$file)
+function script:__load_aliases([string]$File)
 {
-    if (-not [System.IO.File]::Exists($file)) { return }
-    foreach ($line in [System.IO.File]::ReadAllLines($file))
+    if (-not [System.IO.File]::Exists($File)) { return }
+
+    foreach ($line in [System.IO.File]::ReadAllLines($File))
     {
         $line = $line.TrimStart()
         if (-not $line -or $line[0] -eq '#') { continue }
+
         $eq = $line.IndexOf('=')
         if ($eq -lt 1) { continue }
+
         $name = $line.Substring(0, $eq).TrimEnd()
         $body = $line.Substring($eq + 1)
+
         if ($name -notmatch '^[A-Za-z_][A-Za-z0-9_-]*$') { continue }
+
         if ($body.Length -ge 2)
         {
             $f = $body[0]; $l = $body[$body.Length - 1]
             if (($f -eq '"' -and $l -eq '"') -or ($f -eq "'" -and $l -eq "'"))
             { $body = $body.Substring(1, $body.Length - 2) }
         }
+
         Set-Item -LiteralPath "function:global:$name" `
             -Value ([scriptblock]::Create("$body `@args"))
     }
 }
 
-__shells_load_envs    "$HOME/.envs"
-__shells_load_aliases "$HOME/.aliases"
-
-Remove-Item function:__shells_path_prepend,
-    function:__shells_load_envs,
-    function:__shells_load_aliases -ErrorAction Ignore
+__load_envs    "$HOME/.envs"
+__load_aliases "$HOME/.aliases"
+Remove-Item -Path function:__load_envs, function:__load_aliases -ErrorAction Ignore
 
 
 # =============================================================================
 # SECTION 4 — Language & toolchain environment variables (non-PATH)
 # =============================================================================
-if (-not $env:NPM_CONFIG_PREFIX) { $env:NPM_CONFIG_PREFIX = "$HOME/.npm-global" }
+if (-not $env:NPM_CONFIG_PREFIX) { $env:NPM_CONFIG_PREFIX = "$HOME/.npm-global"  }
 if (-not $env:PNPM_HOME)         { $env:PNPM_HOME         = "$HOME/.pnpm-global" }
-if ([System.IO.Directory]::Exists("$HOME/.fnm")) { $env:FNM_DIR     = "$HOME/.fnm"  }
-if ([System.IO.Directory]::Exists("$HOME/.bun")) { $env:BUN_INSTALL = "$HOME/.bun"  }
-if ([System.IO.Directory]::Exists("$HOME/.deno")){ $env:DENO_INSTALL= "$HOME/.deno" }
+
+# 工具目录检测：存在则设置对应环境变量
+$__tool_dirs = @{
+    FNM_DIR     = "$HOME/.fnm"
+    BUN_INSTALL = "$HOME/.bun"
+    DENO_INSTALL= "$HOME/.deno"
+    POETRY_HOME = "$HOME/.poetry"
+    PYENV_ROOT  = "$HOME/.pyenv"
+}
+foreach ($kv in $__tool_dirs.GetEnumerator())
+{
+    if (-not (Get-Item -Path "env:$($kv.Key)" -ErrorAction Ignore) -and
+        [System.IO.Directory]::Exists($kv.Value))
+    { [System.Environment]::SetEnvironmentVariable($kv.Key, $kv.Value) }
+}
+Remove-Variable __tool_dirs -ErrorAction Ignore
 
 if (-not $env:GOPATH) { $env:GOPATH = "$HOME/go" }
 if (-not $env:GOROOT)
 {
     foreach ($d in '/home/linuxbrew/.linuxbrew/opt/go/libexec',
-        '/opt/homebrew/opt/go/libexec', '/usr/local/go', "$HOME/.local/go")
+                   '/opt/homebrew/opt/go/libexec',
+                   '/usr/local/go',
+                   "$HOME/.local/go")
     {
         if ([System.IO.Directory]::Exists($d)) { $env:GOROOT = $d; break }
     }
@@ -231,29 +259,29 @@ if (-not $env:GOROOT)
 if (-not $env:ANACONDA_HOME)
 {
     foreach ($d in "$HOME/anaconda3", "$HOME/miniconda3",
-        '/opt/anaconda3', '/opt/miniconda3')
+                   '/opt/anaconda3', '/opt/miniconda3')
     {
         if ([System.IO.Directory]::Exists($d)) { $env:ANACONDA_HOME = $d; break }
     }
 }
-if ([System.IO.Directory]::Exists("$HOME/.poetry")) { $env:POETRY_HOME = "$HOME/.poetry" }
-if ([System.IO.Directory]::Exists("$HOME/.pyenv"))  { $env:PYENV_ROOT  = "$HOME/.pyenv"  }
 
 if (-not $env:JAVA_HOME)
 {
     if ([System.IO.File]::Exists('/usr/libexec/java_home'))
-    { $env:JAVA_HOME = (& /usr/libexec/java_home 2>$null) }
+    {
+        $env:JAVA_HOME = (& /usr/libexec/java_home 2>$null)
+    }
     else
     {
         foreach ($d in '/usr/lib/jvm/default-java',
-            '/usr/lib/jvm/java-11-openjdk-amd64')
+                       '/usr/lib/jvm/java-11-openjdk-amd64')
         {
             if ([System.IO.Directory]::Exists($d)) { $env:JAVA_HOME = $d; break }
         }
     }
 }
 
-if ($SHELLS_OS -eq 'linux' -or $SHELLS_OS -eq 'wsl')
+if ($SHELLS_OS -in 'linux', 'wsl')
 {
     foreach ($p in '/usr/lib/x86_64-linux-gnu', '/usr/lib/aarch64-linux-gnu')
     {
@@ -272,9 +300,11 @@ if (-not $env:COMPOSE_DOCKER_CLI_BUILD) { $env:COMPOSE_DOCKER_CLI_BUILD = '1' }
 # =============================================================================
 # SECTION 5 — PATH
 # =============================================================================
-function script:__shells_prepend_dir
+
+# 将目录插入 PATH 头部（跳过不存在或已存在的条目）
+function script:__prepend_dir
 {
-    $sep = $__shells_psep
+    $sep = $script:__psep
     foreach ($d in $args)
     {
         if (-not $d) { continue }
@@ -283,9 +313,11 @@ function script:__shells_prepend_dir
         { $env:PATH = "$d$sep$env:PATH" }
     }
 }
-function script:__shells_append_dir
+
+# 将目录追加到 PATH 尾部（跳过不存在或已存在的条目）
+function script:__append_dir
 {
-    $sep = $__shells_psep
+    $sep = $script:__psep
     foreach ($d in $args)
     {
         if (-not $d) { continue }
@@ -295,109 +327,129 @@ function script:__shells_append_dir
     }
 }
 
-__shells_append_dir `
-    "$HOME/.lmstudio/bin" `
-    "$HOME/.local/bin"    `
-    "$HOME/bin"           `
-    "$HOME/Applications"  `
+# 低优先级（追加）：用户个人目录
+__append_dir `
+    "$HOME/.lmstudio/bin"         `
+    "$HOME/.local/bin"            `
+    "$HOME/bin"                   `
+    "$HOME/Applications"          `
     "$HOME/.local/Applications"
 
-$__shells_cargo = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { "$HOME/.cargo" }
-__shells_prepend_dir `
-    "$__shells_cargo/bin" `
-    "$HOME/.rd/bin"       `
-    "$HOME/.opencode/bin"
-Remove-Variable __shells_cargo -Scope Script -ErrorAction Ignore
+# Rust / Rancher / opencode
+$__cargo = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { "$HOME/.cargo" }
+__prepend_dir "$__cargo/bin" "$HOME/.rd/bin" "$HOME/.opencode/bin"
+Remove-Variable __cargo -ErrorAction Ignore
+
 if ([System.IO.File]::Exists("$HOME/.cargo/env.ps1")) { . "$HOME/.cargo/env.ps1" }
 
-__shells_prepend_dir `
-    $(if ($env:BUN_INSTALL)   { "$env:BUN_INSTALL/bin"   }) `
-    $(if ($env:DENO_INSTALL)  { "$env:DENO_INSTALL/bin"  }) `
-    "$env:NPM_CONFIG_PREFIX/bin" `
-    $env:PNPM_HOME               `
-    "$HOME/.yarn/bin"            `
-    "$HOME/.config/yarn/global/node_modules/.bin" `
-    "$HOME/.volta/bin"           `
-    "$HOME/.fnm"                 `
+# Node 生态
+__prepend_dir `
+    $(if ($env:BUN_INSTALL)  { "$env:BUN_INSTALL/bin"  }) `
+    $(if ($env:DENO_INSTALL) { "$env:DENO_INSTALL/bin" }) `
+    "$env:NPM_CONFIG_PREFIX/bin"                           `
+    $env:PNPM_HOME                                         `
+    "$HOME/.yarn/bin"                                      `
+    "$HOME/.config/yarn/global/node_modules/.bin"          `
+    "$HOME/.volta/bin"                                     `
+    "$HOME/.fnm"                                           `
     "$HOME/.local/share/npm/bin"
 
-__shells_prepend_dir `
+# Python 生态
+__prepend_dir `
     $(if ($env:PYENV_ROOT)    { "$env:PYENV_ROOT/bin"    }) `
     $(if ($env:ANACONDA_HOME) { "$env:ANACONDA_HOME/bin" }) `
     $(if ($env:POETRY_HOME)   { "$env:POETRY_HOME/bin"   }) `
-    "$HOME/.poetry/bin"  `
     "$HOME/.local/pipx/bin"
 
-__shells_prepend_dir `
+# Go
+__prepend_dir `
     "$env:GOPATH/bin" `
     $(if ($env:GOROOT) { "$env:GOROOT/bin" })
 
-if ($SHELLS_OS -eq 'linux' -or $SHELLS_OS -eq 'wsl')
+# Linux / WSL 附加路径
+if ($SHELLS_OS -in 'linux', 'wsl')
 {
-    __shells_append_dir `
-        '/snap/bin'                                    `
-        '/var/lib/flatpak/exports/bin'                 `
-        "$HOME/.local/share/flatpak/exports/bin"       `
+    __append_dir `
+        '/snap/bin'                                  `
+        '/var/lib/flatpak/exports/bin'               `
+        "$HOME/.local/share/flatpak/exports/bin"     `
         '/opt/bin'
 }
 
+# VS Code CLI
 switch ($SHELLS_OS)
 {
     'wsl'
     {
-        __shells_append_dir `
+        __append_dir `
             '/mnt/c/Program Files/Microsoft VS Code/bin' `
             "/mnt/c/Users/$env:USER/AppData/Local/Programs/Microsoft VS Code/bin"
     }
     'windows'
     {
-        __shells_append_dir `
-            "$env:ProgramFiles\Microsoft VS Code\bin"          `
+        __append_dir `
+            "$env:ProgramFiles\Microsoft VS Code\bin"         `
             "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin"
     }
 }
 
-foreach ($__shells_brew in '/home/linuxbrew/.linuxbrew/bin/brew',
-    "$HOME/.linuxbrew/bin/brew", '/opt/homebrew/bin/brew', '/usr/local/bin/brew')
+# Homebrew（找到第一个即停止）
+foreach ($__brew in '/home/linuxbrew/.linuxbrew/bin/brew',
+                    "$HOME/.linuxbrew/bin/brew",
+                    '/opt/homebrew/bin/brew',
+                    '/usr/local/bin/brew')
 {
-    if (-not [System.IO.File]::Exists($__shells_brew)) { continue }
-    $__shells_brew_init = & $__shells_brew shellenv pwsh 2>$null
-    if ($LASTEXITCODE -eq 0 -and $__shells_brew_init)
-    { $__shells_brew_init -join "`n" | Invoke-Expression }
+    if (-not [System.IO.File]::Exists($__brew)) { continue }
+
+    $__brew_init = & $__brew shellenv pwsh 2>$null
+    if ($LASTEXITCODE -eq 0 -and $__brew_init)
+    {
+        $__brew_init -join "`n" | Invoke-Expression
+    }
     else
     {
-        $prefix = (& $__shells_brew --prefix 2>$null | Select-Object -First 1)
-        if ($prefix)
+        $__prefix = (& $__brew --prefix 2>$null | Select-Object -First 1)
+        if ($__prefix)
         {
-            $env:HOMEBREW_PREFIX     = $prefix
-            $env:HOMEBREW_CELLAR     = "$prefix/Cellar"
-            $env:HOMEBREW_REPOSITORY = $prefix
-            __shells_prepend_dir "$prefix/bin" "$prefix/sbin"
+            $env:HOMEBREW_PREFIX     = $__prefix
+            $env:HOMEBREW_CELLAR     = "$__prefix/Cellar"
+            $env:HOMEBREW_REPOSITORY = $__prefix
+            __prepend_dir "$__prefix/bin" "$__prefix/sbin"
         }
     }
     break
 }
-Remove-Variable __shells_brew, __shells_brew_init -Scope Script -ErrorAction Ignore
+Remove-Variable __brew, __brew_init, __prefix -ErrorAction Ignore
 
-Remove-Item function:__shells_prepend_dir,
-    function:__shells_append_dir -ErrorAction Ignore
-Remove-Variable __shells_psep -ErrorAction Ignore
+# 清理 PATH 辅助函数（不再对外暴露）
+Remove-Item -Path function:__prepend_dir, function:__append_dir -ErrorAction Ignore
+Remove-Variable __psep -ErrorAction Ignore
 
 
 # =============================================================================
 # SECTION 6 — File listing & navigation aliases
 # =============================================================================
-# All helpers use PowerShell built-in cmdlets only — no external binaries.
-#
-#   ls / la / l / ll / lt  →  Get-ChildItem  (built-in)
-#   grep / fgrep / egrep   →  Select-String  (built-in)
 
-# ---- ls family (Get-ChildItem) ----------------------------------------------
-# ls  — basic listing
-# la  — all items including hidden (-Force)
-# l   — wide compact view (names only)
-# ll  — long view: mode, timestamp, human-readable size, name
-# lt  — long view sorted newest-first
+# ---- 共享的文件大小格式化脚本块（ll / lt 复用，避免重复） ----------------
+$script:__fmt_size = {
+    if ($_.PSIsContainer) { '<DIR>' }
+    else
+    {
+        $n = $_.Length
+        if     ($n -ge 1GB) { '{0:N1}G' -f ($n / 1GB) }
+        elseif ($n -ge 1MB) { '{0:N1}M' -f ($n / 1MB) }
+        elseif ($n -ge 1KB) { '{0:N1}K' -f ($n / 1KB) }
+        else                { "${n}B" }
+    }
+}
+
+# 共享的 Format-Table 列定义
+$script:__fmt_cols = @(
+    'Mode',
+    @{ N = 'Modified'; E = { $_.LastWriteTime.ToString('yyyy-MM-dd HH:mm') } },
+    @{ N = 'Size';     E = $script:__fmt_size },
+    'Name'
+)
 
 function global:ls { Get-ChildItem        @args }
 function global:la { Get-ChildItem -Force @args }
@@ -405,95 +457,63 @@ function global:l  { Get-ChildItem        @args | Format-Wide -AutoSize -Propert
 
 function global:ll
 {
-    $sizeExpr = {
-        if ($_.PSIsContainer) { '<DIR>' }
-        else
-        {
-            $n = $_.Length
-            if     ($n -ge 1GB) { '{0:N1}G' -f ($n / 1GB) }
-            elseif ($n -ge 1MB) { '{0:N1}M' -f ($n / 1MB) }
-            elseif ($n -ge 1KB) { '{0:N1}K' -f ($n / 1KB) }
-            else                { "${n}B" }
-        }
-    }
-    Get-ChildItem -Force @args | Format-Table -AutoSize @(
-        'Mode',
-        @{ N = 'Modified'; E = { $_.LastWriteTime.ToString('yyyy-MM-dd HH:mm') } },
-        @{ N = 'Size';     E = $sizeExpr },
-        'Name'
-    )
+    Get-ChildItem -Force @args | Format-Table -AutoSize $script:__fmt_cols
 }
 
 function global:lt
 {
-    $sizeExpr = {
-        if ($_.PSIsContainer) { '<DIR>' }
-        else
-        {
-            $n = $_.Length
-            if     ($n -ge 1GB) { '{0:N1}G' -f ($n / 1GB) }
-            elseif ($n -ge 1MB) { '{0:N1}M' -f ($n / 1MB) }
-            elseif ($n -ge 1KB) { '{0:N1}K' -f ($n / 1KB) }
-            else                { "${n}B" }
-        }
-    }
     Get-ChildItem -Force @args |
         Sort-Object LastWriteTime -Descending |
-        Format-Table -AutoSize @(
-            'Mode',
-            @{ N = 'Modified'; E = { $_.LastWriteTime.ToString('yyyy-MM-dd HH:mm') } },
-            @{ N = 'Size';     E = $sizeExpr },
-            'Name'
-        )
+        Format-Table -AutoSize $script:__fmt_cols
 }
 
-# ---- grep family (Select-String) -------------------------------------------
-# .NET regex is used by default — equivalent to ERE.
-# -SimpleMatch switches to literal / fgrep semantics.
-#
-# Usage (file mode):    grep  'pattern' file [file ...]
-# Usage (pipeline):     <cmd> | grep 'pattern'
+# ---- grep 族：用单个内部函数实现，对外暴露三个别名 -------------------------
+# grep / egrep  → .NET 正则（ERE 等价）
+# fgrep         → 字面量匹配（-SimpleMatch）
+
+function script:__grep_impl
+{
+    param(
+        [string]  $Pattern,
+        [string[]]$Path,
+        [switch]  $Simple
+    )
+    $extra = if ($Simple) { @{ SimpleMatch = $true } } else { @{} }
+    if ($Path) { Select-String -Pattern $Pattern -Path $Path @extra }
+    else       { $input | Select-String -Pattern $Pattern @extra }
+}
 
 function global:grep
 {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory, Position = 0)]
-        [string]$Pattern,
-        [Parameter(Position = 1, ValueFromRemainingArguments)]
-        [string[]]$Path
+        [Parameter(Mandatory, Position = 0)] [string]  $Pattern,
+        [Parameter(Position = 1, ValueFromRemainingArguments)] [string[]] $Path
     )
-    if ($Path) { Select-String -Pattern $Pattern -Path $Path }
-    else       { $input | Select-String -Pattern $Pattern }
-}
-
-function global:fgrep
-{
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, Position = 0)]
-        [string]$Pattern,
-        [Parameter(Position = 1, ValueFromRemainingArguments)]
-        [string[]]$Path
-    )
-    if ($Path) { Select-String -SimpleMatch -Pattern $Pattern -Path $Path }
-    else       { $input | Select-String -SimpleMatch -Pattern $Pattern }
+    __grep_impl -Pattern $Pattern -Path $Path
 }
 
 function global:egrep
 {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory, Position = 0)]
-        [string]$Pattern,
-        [Parameter(Position = 1, ValueFromRemainingArguments)]
-        [string[]]$Path
+        [Parameter(Mandatory, Position = 0)] [string]  $Pattern,
+        [Parameter(Position = 1, ValueFromRemainingArguments)] [string[]] $Path
     )
-    if ($Path) { Select-String -Pattern $Pattern -Path $Path }
-    else       { $input | Select-String -Pattern $Pattern }
+    __grep_impl -Pattern $Pattern -Path $Path
 }
 
-# ---- Directory navigation / reload / path -----------------------------------
+function global:fgrep
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)] [string]  $Pattern,
+        [Parameter(Position = 1, ValueFromRemainingArguments)] [string[]] $Path
+    )
+    __grep_impl -Pattern $Pattern -Path $Path -Simple
+}
+
+# ---- 目录导航 ---------------------------------------------------------------
 function global:..   { Set-Location ..       }
 function global:...  { Set-Location ../..    }
 function global:.... { Set-Location ../../.. }
@@ -512,35 +532,28 @@ function global:path   { $env:PATH -split [System.IO.Path]::PathSeparator }
 # =============================================================================
 # SECTION 7 — OS-specific aliases (clipboard / file manager / package manager)
 # =============================================================================
-# Clipboard: Set-Clipboard / Get-Clipboard are PowerShell built-in cmdlets
-# (pwsh 7+). On Linux they delegate to xclip/xsel/wl-clipboard at runtime —
-# that discovery is handled internally by PowerShell, not by this script.
-
 switch ($SHELLS_OS)
 {
     'macos'
     {
         function global:clip   { $input | Set-Clipboard }
         function global:paste  { Get-Clipboard }
-        function global:finder { open . @args }          # macOS 'open' = Finder
+        function global:finder { open . @args }
         function global:brewup { brew update; brew upgrade; brew cleanup }
     }
-    { $_ -eq 'linux' -or $_ -eq 'wsl' }
+    { $_ -in 'linux', 'wsl' }
     {
         function global:clip  { $input | Set-Clipboard }
         function global:paste { Get-Clipboard }
+
         if ($SHELLS_OS -eq 'wsl')
-        {
-            function global:explorer { explorer.exe . @args }
-        }
+        { function global:explorer { explorer.exe . @args } }
+
         if (Get-Command brew -ErrorAction Ignore)
-        {
-            function global:brewup { brew update; brew upgrade; brew cleanup }
-        }
+        { function global:brewup { brew update; brew upgrade; brew cleanup } }
+
         if (Get-Command apt -ErrorAction Ignore)
-        {
-            function global:aptup { sudo apt update; sudo apt upgrade }
-        }
+        { function global:aptup { sudo apt update; sudo apt upgrade } }
     }
     'windows'
     {
@@ -554,14 +567,11 @@ switch ($SHELLS_OS)
 # =============================================================================
 # SECTION 8 — Network helpers & HTTP proxy
 # =============================================================================
-# localip and ports use cross-platform PowerShell cmdlets (pwsh 7+) — no
-# OS-specific external tools (hostname, ss, lsof, ipconfig) are needed.
-
 function global:myip
-{ (Invoke-RestMethod -Uri 'https://ifconfig.me' -TimeoutSec 5).Trim()
+{
+    (Invoke-RestMethod -Uri 'https://ifconfig.me' -TimeoutSec 5).Trim()
 }
 
-# Get-NetIPAddress is cross-platform in pwsh 7+ (replaces hostname -I / ipconfig getifaddr).
 function global:localip
 {
     (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Ignore |
@@ -572,7 +582,6 @@ function global:localip
         Select-Object -ExpandProperty IPAddress) -join ' '
 }
 
-# Get-NetTCPConnection is cross-platform in pwsh 7+ (replaces ss -tulnp / lsof).
 function global:ports
 {
     Get-NetTCPConnection -State Listen -ErrorAction Ignore |
@@ -580,36 +589,37 @@ function global:ports
         Sort-Object LocalPort
 }
 
-# ---- Proxy toggle -----------------------------------------------------------
+# ---- Proxy 配置 -------------------------------------------------------------
 if (-not $env:PROXY_HOST) { $env:PROXY_HOST = '127.0.0.1' }
 if (-not $env:PROXY_PORT) { $env:PROXY_PORT = '3067'       }
 
-function global:proxy
+# 提取公共参数解析逻辑，避免 proxy / socks5 重复
+function script:__resolve_proxy_addr
 {
+    param([string[]]$UserArgs)
     $h = $env:PROXY_HOST; $p = $env:PROXY_PORT
-    switch ($args.Count)
+    switch ($UserArgs.Count)
     {
         0 {}
-        1 { $p = $args[0] }
-        2 { $h = $args[0]; $p = $args[1] }
-        default { Write-Error 'usage: proxy [[host] port]'; return }
+        1 { $p = $UserArgs[0] }
+        2 { $h = $UserArgs[0]; $p = $UserArgs[1] }
+        default { throw 'usage: <cmd> [[host] port]' }
     }
+    return $h, $p
+}
+
+function global:proxy
+{
+    try   { $h, $p = __resolve_proxy_addr $args } catch { Write-Error $_; return }
     $url = "http://${h}:${p}"
-    $env:http_proxy  = $url; $env:https_proxy = $url
-    $env:HTTP_PROXY  = $url; $env:HTTPS_PROXY = $url
+    $env:http_proxy  = $url; $env:HTTP_PROXY  = $url
+    $env:https_proxy = $url; $env:HTTPS_PROXY = $url
     "proxy on  (${h}:${p})"
 }
 
 function global:socks5
 {
-    $h = $env:PROXY_HOST; $p = $env:PROXY_PORT
-    switch ($args.Count)
-    {
-        0 {}
-        1 { $p = $args[0] }
-        2 { $h = $args[0]; $p = $args[1] }
-        default { Write-Error 'usage: socks5 [[host] port]'; return }
-    }
+    try   { $h, $p = __resolve_proxy_addr $args } catch { Write-Error $_; return }
     $url = "socks5://${h}:${p}"
     $env:all_proxy = $url; $env:ALL_PROXY = $url
     "socks5 on (${h}:${p})"
@@ -617,7 +627,8 @@ function global:socks5
 
 function global:unproxy
 {
-    foreach ($v in 'http_proxy','https_proxy','HTTP_PROXY','HTTPS_PROXY','all_proxy','ALL_PROXY')
+    foreach ($v in 'http_proxy','https_proxy','HTTP_PROXY','HTTPS_PROXY',
+                   'all_proxy','ALL_PROXY')
     { [System.Environment]::SetEnvironmentVariable($v, $null) }
     'proxy off'
 }
@@ -671,68 +682,70 @@ if (-not $env:SHELLS_NO_PROMPT)
     if (Get-Command starship -ErrorAction Ignore)
     {
         Invoke-Expression (& starship init powershell)
-    } elseif (Get-Command Set-PSReadLineOption -ErrorAction Ignore)
+    }
+    elseif (Get-Command Set-PSReadLineOption -ErrorAction Ignore)
     {
         $e = [char]27
-        $global:__shells_has_git   = [bool](Get-Command git -ErrorAction Ignore)
-        $global:__shells_user      = if ($env:USER) { $env:USER } else { $env:USERNAME }
-        $global:__shells_host      = [System.Net.Dns]::GetHostName()
-        $global:__shells_c_reset   = "$e[0m"
-        $global:__shells_c_gray    = "$e[90m"
-        $global:__shells_c_red     = "$e[31m"
-        $global:__shells_c_green   = "$e[32m"
-        $global:__shells_c_blue    = "$e[34m"
-        $global:__shells_c_magenta = "$e[35m"
-        $global:__shells_c_cyan    = "$e[36m"
-        $global:__shells_c_white   = "$e[97m"
+
+        # 提前缓存到全局变量，prompt 每次触发时直接读取，无需重算
+        $global:__p_has_git   = [bool](Get-Command git -ErrorAction Ignore)
+        $global:__p_user      = if ($env:USER) { $env:USER } else { $env:USERNAME }
+        $global:__p_host      = [System.Net.Dns]::GetHostName()
+        $global:__p_reset     = "$e[0m"
+        $global:__p_gray      = "$e[90m"
+        $global:__p_red       = "$e[31m"
+        $global:__p_green     = "$e[32m"
+        $global:__p_blue      = "$e[34m"
+        $global:__p_magenta   = "$e[35m"
+        $global:__p_cyan      = "$e[36m"
+        $global:__p_white     = "$e[97m"
 
         function global:prompt
         {
-            $ok = $?; $rc = $LASTEXITCODE
-            if ($null -eq $rc)            { $rc = 0 }
-            if (-not $ok -and $rc -eq 0)  { $rc = 1 }
+            # 立即捕获退出码，避免后续命令覆盖
+            $ok = $?
+            $rc = $LASTEXITCODE
+            if ($null -eq $rc)           { $rc = 0 }
+            if (-not $ok -and $rc -eq 0) { $rc = 1 }
 
             $now = (Get-Date).ToString('HH:mm:ss')
+
+            # ~ 缩写处理
             $cwd = $PWD.Path
             if ($cwd.StartsWith($HOME, [System.StringComparison]::Ordinal))
             { $cwd = '~' + $cwd.Substring($HOME.Length) }
 
+            # 虚拟环境标记
             $extra = ''
             if ($env:VIRTUAL_ENV)
-            { $extra = " $($__shells_c_cyan)($(Split-Path -Leaf $env:VIRTUAL_ENV))$($__shells_c_reset)" }
+            { $extra = " $($__p_cyan)($(Split-Path -Leaf $env:VIRTUAL_ENV))$($__p_reset)" }
             elseif ($env:CONDA_DEFAULT_ENV -and $env:CONDA_DEFAULT_ENV -ne 'base')
-            { $extra = " $($__shells_c_cyan)($env:CONDA_DEFAULT_ENV)$($__shells_c_reset)" }
+            { $extra = " $($__p_cyan)($env:CONDA_DEFAULT_ENV)$($__p_reset)" }
 
-            if ($__shells_has_git)
+            # Git 分支（只有检测到 git 命令时才查找）
+            # 性能优化：用 git rev-parse 一次性获取 root + HEAD，减少子进程调用
+            if ($__p_has_git)
             {
-                $d = $PWD.Path
-                while ($d)
+                $gitRoot = & git rev-parse --show-toplevel 2>$null
+                if ($LASTEXITCODE -eq 0 -and $gitRoot)
                 {
-                    $g = "$d/.git"
-                    if ([System.IO.Directory]::Exists($g) -or [System.IO.File]::Exists($g))
+                    $branch = & git symbolic-ref --short HEAD 2>$null
+                    if (-not $branch) { $branch = & git rev-parse --short HEAD 2>$null }
+                    if ($branch)
                     {
-                        $branch = & git symbolic-ref --short HEAD 2>$null
-                        if (-not $branch) { $branch = & git rev-parse --short HEAD 2>$null }
-                        if ($branch)
-                        {
-                            & git diff-index --quiet HEAD -- 2>$null
-                            $dirty = if ($LASTEXITCODE -ne 0) { '*' } else { '' }
-                            $extra += " $($__shells_c_magenta)$branch$dirty$($__shells_c_reset)"
-                        }
-                        break
+                        # --porcelain 比 diff-index 更快，且能检测未追踪文件
+                        $dirty = if (& git status --porcelain 2>$null) { '*' } else { '' }
+                        $extra += " $($__p_magenta)${branch}${dirty}$($__p_reset)"
                     }
-                    $parent = [System.IO.Path]::GetDirectoryName($d)
-                    if (-not $parent -or $parent -eq $d) { break }
-                    $d = $parent
                 }
             }
 
-            $p  = "$($__shells_c_gray)[$now]$($__shells_c_reset)"
-            $p += " $($__shells_c_green)$__shells_user$($__shells_c_white)@$__shells_host$($__shells_c_reset)"
-            $p += " $($__shells_c_blue)[$cwd]$($__shells_c_reset)"
+            $p  = "$($__p_gray)[$now]$($__p_reset)"
+            $p += " $($__p_green)$__p_user$($__p_white)@$__p_host$($__p_reset)"
+            $p += " $($__p_blue)[$cwd]$($__p_reset)"
             $p += $extra
-            if ($rc -ne 0) { $p += " $($__shells_c_red)[$rc]$($__shells_c_reset)" }
-            $p += "`n$($__shells_c_cyan)`$$($__shells_c_reset) "
+            if ($rc -ne 0) { $p += " $($__p_red)[$rc]$($__p_reset)" }
+            $p += "`n$($__p_cyan)`$$($__p_reset) "
 
             $global:LASTEXITCODE = 0
             $p
