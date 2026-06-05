@@ -725,5 +725,5 @@ if ($env.SHELLS_NO_PROMPT? | is-empty) {
 if (which atuin | is-not-empty) {
     $env.ATUIN_DB_PATH = $"($env.HOME)/.local/share/atuin/history_nu.db"
     mkdir ($nu.data-dir | path join "vendor/autoload")
-    atuin init nu | save -f ($nu.data-dir | path join "vendor/autoload/atuin.nu")
+    atuin init nu --disable-up-arrow | save -f ($nu.data-dir | path join "vendor/autoload/atuin.nu")
 }

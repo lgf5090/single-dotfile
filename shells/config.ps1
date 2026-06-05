@@ -1160,5 +1160,5 @@ if (-not $env:SHELLS_NO_PROMPT)
 if (Get-Command atuin -ErrorAction SilentlyContinue)
 {
     $env:ATUIN_DB_PATH = "$env:USERPROFILE\.local\share\atuin\history_powershell.db"
-    Invoke-Expression (& { atuin init powershell | Out-String })
+    Invoke-Expression (& { atuin init powershell --disable-up-arrow | Out-String })
 }

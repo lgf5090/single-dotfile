@@ -724,5 +724,5 @@ unset -f _load_configs
 if command -v atuin &>/dev/null; then
     # export ATUIN_DB_PATH="$HOME/.local/share/atuin/history_bash.db"
     export ATUIN_DB_PATH="$HOME/.local/share/atuin/history.db"
-    eval "$(atuin init bash)"
+    eval "$(atuin init bash --disable-up-arrow)"
 fi

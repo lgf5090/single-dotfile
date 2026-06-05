@@ -758,5 +758,5 @@ functions -e _load_configs
 # Atuin configuration for Fish
 if command -v atuin > /dev/null
     set -gx ATUIN_DB_PATH "$HOME/.local/share/atuin/history_fish.db"
-    atuin init fish | source
+    atuin init fish --disable-up-arrow | source
 end
