@@ -1,0 +1,36 @@
+## 兼容 GNU nano 9.0 的配置文件
+
+## 界面元素配色 (模拟 Dracula 主题)
+## 配色方案：使用官方定义的8种颜色 + bright 前缀
+## Dracula 主题模拟：黑底，使用不同亮色区分元素
+set titlecolor       brightwhite,black   # 顶部标题栏：亮白字 黑底
+set statuscolor      brightwhite,black   # 底部状态栏：亮白字 黑底
+set promptcolor      brightwhite,black   # 输入提示行：亮白字 黑底
+set minicolor        brightwhite,black   # 迷你栏：亮白字 黑底
+set errorcolor       red,black           # 错误信息：红字 黑底
+set keycolor         cyan                # 快捷键提示：青色 (模拟 Dracula 青色)
+set functioncolor    green               # 功能键提示：绿色 (模拟 Dracula 绿色)
+set numbercolor      brightblack         # 行号：亮黑色 (模拟 Dracula 灰色)
+set scrollercolor    magenta             # 滚动条指示器：品红色 (模拟 Dracula 紫色)
+set selectedcolor    brightwhite,magenta # 选中文本：亮白字 品红底
+
+## 编辑器行为
+set linenumbers      # 显示行号
+set autoindent       # 启用自动缩进
+set tabsize 4        # 设置制表符宽度为 4
+set tabstospaces     # 将输入的制表符转换为空格
+set softwrap         # 启用软换行
+set mouse            # 启用鼠标支持
+set zap              # 允许使用退格键或删除键删除整行
+set regexp           # 启用正则表达式搜索
+
+## 备份设置
+set backup           # 开启自动备份
+
+## 状态与历史
+set constantshow     # 在状态栏显示光标位置信息
+set positionlog      # 记住并恢复到上次关闭文件时的光标位置
+set historylog       # 保存搜索和替换的历史记录
+
+## 语法高亮 (包含系统自带的语法高亮文件)
+include "/usr/share/nano/*.nanorc"
